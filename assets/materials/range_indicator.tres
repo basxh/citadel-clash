@@ -1,0 +1,7 @@
+[gd_resource type="StandardMaterial3D" format=3 uid="uid://range_indicator"]
+
+[resource]
+albedo_color = Color(1, 1, 1, 0.3)
+transparency = 1
+deblend_mode = 1
+shading_mode = 0

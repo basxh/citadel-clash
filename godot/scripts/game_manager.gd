@@ -23,10 +23,11 @@ signal game_state_changed(state: GameState)
 signal base_destroyed(team: int)
 signal unit_spawned(unit: Unit)
 signal unit_died(unit: Unit)
+signal difficulty_changed(team: int, difficulty: String)
 
 # Game data
 var _team_gold: Dictionary = {}
-var _income_per_second: float = 5.0
+var _income_per_second: float = 3.0
 var _income_timer: float = 0.0
 var _game_state: GameState = GameState.PLAYING
 var _game_time: float = 0.0
@@ -34,15 +35,26 @@ var _active_bases: Dictionary = {}
 var _player_base: Base = null
 
 # Unit costs
-const COST_UNIT_BASIC: int = 10
-const COST_UNIT_FAST: int = 15
-const COST_UNIT_TANK: int = 25
-const COST_TOWER: int = 50
+const COST_UNIT_BASIC: int = 15
+const COST_UNIT_FAST: int = 20
+const COST_UNIT_TANK: int = 40
+const COST_TOWER: int = 60
+
+# Income settings
+const BASE_INCOME: int = 3
+const INCOME_GROWTH_RATE: float = 0.15  # Income grows by 15% per minute
+const STARTING_GOLD: int = 80
+
+# Difficulty multipliers
+var _enemy_difficulty: Dictionary = {
+	TEAM_ENEMY_1: "normal",
+	TEAM_ENEMY_2: "normal"
+}
 
 func _ready() -> void:
 	# Initialize gold for all teams
 	for team in [TEAM_PLAYER, TEAM_ENEMY_1, TEAM_ENEMY_2]:
-		_team_gold[team] = 100
+		_team_gold[team] = STARTING_GOLD
 	
 	print("GameManager initialized")
 
@@ -59,8 +71,10 @@ func _process(delta: float) -> void:
 		_distribute_income()
 
 func _distribute_income() -> void:
+	# Calculate growing income based on game time
+	var current_income = _income_per_second + (_game_time / 60.0) * INCOME_GROWTH_RATE * BASE_INCOME
 	for team in _team_gold.keys():
-		add_gold(team, int(_income_per_second))
+		add_gold(team, int(current_income))
 
 func get_gold(team: int) -> int:
 	return _team_gold.get(team, 0)
@@ -115,10 +129,11 @@ func reset_game() -> void:
 	_game_state = GameState.PLAYING
 	_game_time = 0.0
 	_income_timer = 0.0
+	_income_per_second = BASE_INCOME
 	_active_bases.clear()
 	_player_base = null
 	for team in [TEAM_PLAYER, TEAM_ENEMY_1, TEAM_ENEMY_2]:
-		_team_gold[team] = 100
+		_team_gold[team] = STARTING_GOLD
 	
 	# Reload scene
 	get_tree().reload_current_scene()
@@ -138,3 +153,19 @@ func get_random_enemy_team() -> int:
 	if enemies.is_empty():
 		return TEAM_NEUTRAL
 	return enemies[randi() % enemies.size()]
+
+func set_enemy_difficulty(team: int, difficulty: String) -> void:
+	if team in _enemy_difficulty:
+		_enemy_difficulty[team] = difficulty
+		difficulty_changed.emit(team, difficulty)
+
+func get_enemy_difficulty(team: int) -> String:
+	return _enemy_difficulty.get(team, "normal")
+
+func get_difficulty_multiplier(team: int) -> float:
+	var diff = get_enemy_difficulty(team)
+	match diff:
+		"easy": return 0.7
+		"normal": return 1.0
+		"hard": return 1.4
+		_: return 1.0

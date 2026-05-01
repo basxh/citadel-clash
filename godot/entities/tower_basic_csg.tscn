@@ -1,0 +1,25 @@
+[gd_scene load_steps=2 format=3 uid="uid://tower_basic_proto"]
+
+[ext_resource type="Material" uid="uid://tower_material" path="res://assets/materials/tower_stone.tres" id="1_stone"]
+
+[node name="BasicTower" type="Node3D"]
+
+[node name="Base" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+size = Vector3(0.8, 0.3, 0.8)
+material = ExtResource("1_stone")
+
+[node name="Tower" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+size = Vector3(0.5, 0.6, 0.5)
+material = ExtResource("1_stone")
+
+[node name="Top" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.0, 0)
+size = Vector3(0.6, 0.2, 0.6)
+material = ExtResource("1_stone")
+
+[node name="Cannon" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0, -1, 0, 1, 0, 0.3, 1.1, 0)
+size = Vector3(0.1, 0.4, 0.1)
+material = ExtResource("1_stone")

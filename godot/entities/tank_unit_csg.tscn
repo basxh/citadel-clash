@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3 uid="uid://tank_unit_proto"]
+
+[ext_resource type="Material" uid="uid://unit_material" path="res://assets/materials/unit_team_blue.tres" id="1_mw3yk"]
+
+[node name="TankUnit" type="Node3D"]
+
+[node name="Body" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.35, 0)
+size = Vector3(0.4, 0.5, 0.25)
+material = ExtResource("1_mw3yk")
+
+[node name="Head" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.85, 0)
+size = Vector3(0.3, 0.3, 0.2)
+material = ExtResource("1_mw3yk")
+
+[node name="ShoulderLeft" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.3, 0.6, 0)
+size = Vector3(0.15, 0.15, 0.2)
+material = ExtResource("1_mw3yk")
+
+[node name="ShoulderRight" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.3, 0.6, 0)
+size = Vector3(0.15, 0.15, 0.2)
+material = ExtResource("1_mw3yk")
+
+[node name="LeftArm" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.35, 0.45, 0)
+size = Vector3(0.1, 0.25, 0.1)
+material = ExtResource("1_mw3yk")
+
+[node name="RightArm" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.35, 0.45, 0)
+size = Vector3(0.1, 0.25, 0.1)
+material = ExtResource("1_mw3yk")
+
+[node name="LeftLeg" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.1, 0, 0)
+size = Vector3(0.1, 0.35, 0.15)
+material = ExtResource("1_mw3yk")
+
+[node name="RightLeg" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.1, 0, 0)
+size = Vector3(0.1, 0.35, 0.15)
+material = ExtResource("1_mw3yk")
+
+[node name="Shield" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 0.707107, -0.707107, 0, 0.707107, 0.707107, 0.35, 0.5, 0.15)
+size = Vector3(0.25, 0.35, 0.05)
+material = ExtResource("1_mw3yk")

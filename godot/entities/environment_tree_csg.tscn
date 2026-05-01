@@ -1,0 +1,25 @@
+[gd_scene load_steps=3 format=3 uid="uid://tree_proto"]
+
+[ext_resource type="Material" uid="uid://tree_trunk" path="res://assets/materials/tree_trunk.tres" id="1_trunk"]
+[ext_resource type="Material" uid="uid://tree_leaves" path="res://assets/materials/tree_leaves.tres" id="2_leaves"]
+
+[node name="Tree" type="Node3D"]
+
+[node name="Trunk" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+size = Vector3(0.08, 0.4, 0.08)
+material = ExtResource("1_trunk")
+
+[node name="Leaves" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.6, 0)
+height = 0.5
+radius = 0.25
+sides = 6
+material = ExtResource("2_leaves")
+
+[node name="Leaves2" type="CSGCylinder3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.75, 0)
+height = 0.3
+radius = 0.18
+sides = 6
+material = ExtResource("2_leaves")

@@ -4,13 +4,13 @@ class_name Unit
 # Team
 @export var team_id: int = 0  # 0 = Player, 1 = Enemy1, 2 = Enemy2
 
-# Stats
+# Stats - Balanced for 5-10 minute matches
 @export var unit_type: String = "basic"
 @export var max_health: float = 100.0
-@export var move_speed: float = 3.0
-@export var attack_damage: float = 10.0
-@export var attack_range: float = 2.0
-@export var attack_rate: float = 1.0  # attacks per second
+@export var move_speed: float = 3.5
+@export var attack_damage: float = 15.0
+@export var attack_range: float = 1.5
+@export var attack_rate: float = 1.2  # attacks per second
 
 # Current state
 var current_health: float = max_health
@@ -25,14 +25,21 @@ var _current_path_index: int = 0
 # Signals
 signal died(unit: Unit)
 signal health_changed(current: float, max: float)
+signal selected(unit: Unit)
+signal deselected()
 
 # References
 @onready var _mesh: MeshInstance3D = $UnitMesh
 @onready var _health_bar: MeshInstance3D = $HealthBar
+@onready var _selection_ring: MeshInstance3D = $SelectionRing
 
 func _ready() -> void:
 	_update_color()
 	_update_health_bar()
+	
+	# Hide selection ring by default
+	if _selection_ring:
+		_selection_ring.visible = false
 	
 	# Find target base
 	_find_target_base()
@@ -190,20 +197,41 @@ func set_stats_from_type(type_name: String) -> void:
 	unit_type = type_name
 	match type_name:
 		"basic":
-			max_health = 100.0
-			move_speed = 3.0
-			attack_damage = 10.0
-			attack_rate = 1.0
-		"fast":
-			max_health = 60.0
-			move_speed = 6.0
-			attack_damage = 7.0
+			max_health = 80.0
+			move_speed = 4.0
+			attack_damage = 12.0
+			attack_range = 1.5
 			attack_rate = 1.5
+		"fast":
+			max_health = 50.0
+			move_speed = 7.0
+			attack_damage = 8.0
+			attack_range = 1.2
+			attack_rate = 2.0
 		"tank":
-			max_health = 300.0
-			move_speed = 1.5
-			attack_damage = 25.0
-			attack_rate = 0.5
+			max_health = 250.0
+			move_speed = 2.0
+			attack_damage = 35.0
+			attack_range = 1.8
+			attack_rate = 0.6
 	
 	current_health = max_health
 	_update_health_bar()
+
+func set_selected(selected: bool) -> void:
+	if _selection_ring:
+		_selection_ring.visible = selected
+		if selected:
+			selected.emit(self)
+		else:
+			deselected.emit()
+
+func get_unit_info() -> Dictionary:
+	return {
+		"type": unit_type,
+		"health": current_health,
+		"max_health": max_health,
+		"damage": attack_damage,
+		"speed": move_speed,
+		"team": team_id
+	}

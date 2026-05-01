@@ -1,0 +1,45 @@
+[gd_scene load_steps=2 format=3 uid="uid://citadel_fortress_proto"]
+
+[ext_resource type="Material" uid="uid://fortress_material" path="res://assets/materials/fortress_stone.tres" id="1_fortress"]
+
+[node name="CitadelFortress" type="Node3D"]
+
+[node name="Base" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.25, 0)
+size = Vector3(1.6, 0.5, 1.6)
+material = ExtResource("1_fortress")
+
+[node name="MidSection" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.65, 0)
+size = Vector3(1.4, 0.3, 1.4)
+material = ExtResource("1_fortress")
+
+[node name="Top" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.95, 0)
+size = Vector3(1.0, 0.3, 1.0)
+material = ExtResource("1_fortress")
+
+[node name="TowerFrontLeft" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.8, -0.5)
+size = Vector3(0.3, 0.8, 0.3)
+material = ExtResource("1_fortress")
+
+[node name="TowerFrontRight" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.8, -0.5)
+size = Vector3(0.3, 0.8, 0.3)
+material = ExtResource("1_fortress")
+
+[node name="TowerBackLeft" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 0.8, 0.5)
+size = Vector3(0.3, 0.8, 0.3)
+material = ExtResource("1_fortress")
+
+[node name="TowerBackRight" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 0.8, 0.5)
+size = Vector3(0.3, 0.8, 0.3)
+material = ExtResource("1_fortress")
+
+[node name="Gate" type="CSGBox3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, -0.85)
+size = Vector3(0.4, 0.4, 0.1)
+material = ExtResource("1_fortress")

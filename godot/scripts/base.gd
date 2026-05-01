@@ -4,8 +4,8 @@ class_name Base
 # Team identification
 @export var team_id: int = 0  # 0 = Player (Blue), 1 = Enemy1 (Red), 2 = Enemy2 (Green)
 
-# Health
-@export var max_health: float = 1000.0
+# Health - Balanced for 5-10 minute matches
+@export var max_health: float = 500.0  # Reduced from 1000 for faster games
 var current_health: float = max_health
 
 # Constants
@@ -98,3 +98,8 @@ func get_health_percentage() -> float:
 
 func is_alive() -> bool:
 	return current_health > 0
+
+func heal(amount: float) -> void:
+	current_health = min(max_health, current_health + amount)
+	health_changed.emit(current_health, max_health)
+	_update_health_label()

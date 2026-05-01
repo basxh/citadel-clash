@@ -4,11 +4,11 @@ class_name Tower
 # Team
 @export var team_id: int = 0  # 0 = Player, 1 = Enemy1, 2 = Enemy2
 
-# Stats
-@export var range: float = 8.0
-@export var damage: float = 15.0
-@export var fire_rate: float = 1.5  # shots per second
-@export var projectile_speed: float = 15.0
+# Stats - Balanced for 5-10 minute matches
+@export var range: float = 10.0
+@export var damage: float = 25.0
+@export var fire_rate: float = 1.2  # shots per second
+@export var projectile_speed: float = 20.0
 
 # State
 var _fire_timer: float = 0.0
@@ -19,15 +19,22 @@ var _projectile_scene: PackedScene = null
 
 # Signals
 signal fired(target: Unit)
+signal selected(tower: Tower)
+signal deselected()
 
 # References
 @onready var _mesh: MeshInstance3D = $TowerMesh
 @onready var _range_indicator: MeshInstance3D = $RangeIndicator
 @onready var _muzzle: Marker3D = $Muzzle
+@onready var _selection_ring: MeshInstance3D = $SelectionRing
 
 func _ready() -> void:
 	_update_color()
 	_hide_range_indicator()
+	
+	# Hide selection ring by default
+	if _selection_ring:
+		_selection_ring.visible = false
 	
 	print("Tower placed - Team: " + str(team_id))
 
@@ -134,7 +141,7 @@ func _spawn_projectile() -> void:
 	
 	# Animate projectile
 	var tween = create_tween()
-	tween.tween_property(projectile, "global_position", target_pos, 0.2)
+	tween.tween_property(projectile, "global_position", target_pos, 0.15)
 	tween.chain().tween_callback(projectile.queue_free)
 	
 	# Apply damage immediately (hitscan style for simplicity)
@@ -180,3 +187,23 @@ func highlight(is_highlighted: bool) -> void:
 		show_range_indicator()
 	else:
 		_hide_range_indicator()
+
+func set_selected(selected: bool) -> void:
+	if _selection_ring:
+		_selection_ring.visible = selected
+		if selected:
+			selected.emit(self)
+		else:
+			deselected.emit()
+
+func get_tower_info() -> Dictionary:
+	return {
+		"type": "tower",
+		"range": range,
+		"damage": damage,
+		"fire_rate": fire_rate,
+		"team": team_id
+	}
+
+func is_in_range_of(position: Vector3) -> bool:
+	return global_position.distance_to(position) <= range
