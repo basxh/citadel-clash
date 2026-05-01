@@ -84,20 +84,20 @@ material_override = SubResource("LaneMaterial")
 mesh = SubResource("CylinderMesh_Lane")
 skeleton = NodePath("../..")
 
-[node name="PlayerBase" parent="." parent="." instance=ExtResource("2_base")]
+[node name="PlayerBase" parent="." instance=ExtResource("2_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -35, 1.5, -20)
 team_id = 0
-max_health = 1000.0
+max_health = 500.0
 
-[node name="EnemyBase1" parent="." parent="." instance=ExtResource("2_base")]
+[node name="EnemyBase1" parent="." instance=ExtResource("2_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 35, 1.5, -20)
 team_id = 1
-max_health = 1000.0
+max_health = 500.0
 
-[node name="EnemyBase2" parent="." parent="." instance=ExtResource("2_base")]
+[node name="EnemyBase2" parent="." instance=ExtResource("2_base")]
 transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 40)
 team_id = 2
-max_health = 1000.0
+max_health = 500.0
 
 [node name="Units" type="Node3D" parent="."]
 
@@ -190,8 +190,8 @@ offset_right = -20.0
 offset_bottom = 15.0
 grow_horizontal = 0
 grow_vertical = 2
-max_value = 1000.0
-value = 1000.0
+max_value = 500.0
+value = 500.0
 
 [node name="Label" type="Label" parent="CanvasLayer/GameUI/TopBar/HPBar"]
 layout_mode = 1
@@ -200,7 +200,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "Base HP: 1000/1000"
+text = "Base HP: 500/500"
 horizontal_alignment = 1
 vertical_alignment = 1
 
@@ -232,21 +232,21 @@ unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 60)
 layout_mode = 2
 text = "Basic
-10 Gold"
+15 Gold"
 
 [node name="FastUnitButton" type="Button" parent="CanvasLayer/GameUI/BottomBar/UnitButtons"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 60)
 layout_mode = 2
 text = "Fast
-15 Gold"
+20 Gold"
 
 [node name="TankUnitButton" type="Button" parent="CanvasLayer/GameUI/BottomBar/UnitButtons"]
 unique_name_in_owner = true
 custom_minimum_size = Vector2(120, 60)
 layout_mode = 2
 text = "Tank
-25 Gold"
+40 Gold"
 
 [node name="BuildTowerButton" type="Button" parent="CanvasLayer/GameUI/BottomBar"]
 unique_name_in_owner = true
@@ -263,7 +263,7 @@ offset_right = -20.0
 offset_bottom = 30.0
 grow_horizontal = 0
 grow_vertical = 2
-text = "Build Tower\n50 Gold"
+text = "Build Tower\n60 Gold"
 
 [node name="CancelButton" type="Button" parent="CanvasLayer/GameUI/BottomBar"]
 unique_name_in_owner = true
@@ -328,3 +328,65 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_font_sizes/font_size = 28
 text = "Restart"
+
+
+[node name="MessageLabel" type="Label" parent="CanvasLayer/GameUI"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 80.0
+offset_right = 200.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 24
+text = ""
+horizontal_alignment = 1
+visible = false
+
+[node name="EntityInfoPanel" type="Panel" parent="CanvasLayer/GameUI"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_top = 70.0
+offset_right = -10.0
+offset_bottom = 200.0
+grow_horizontal = 0
+visible = false
+
+[node name="EntityInfoLabel" type="Label" parent="CanvasLayer/GameUI/EntityInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Info"
+
+[node name="DifficultyButton" type="Button" parent="CanvasLayer/GameUI/TopBar"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = -20.0
+offset_right = 60.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Difficulty"
+
+[node name="DifficultyMenu" type="PopupMenu" parent="CanvasLayer/GameUI"]
+unique_name_in_owner = true
