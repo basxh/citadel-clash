@@ -1,0 +1,29 @@
+[gd_scene load_steps=3 format=3 uid="uid://base_entity_001"]
+
+[ext_resource type="Script" path="res://scripts/base.gd" id="1_base"]
+
+[sub_resource type="BoxShape3D" id="BoxShape_Base"]
+size = Vector3(4, 3, 4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_Base"]
+size = Vector3(4, 3, 4)
+
+[node name="Base" type="StaticBody3D"]
+collision_layer = 2
+collision_mask = 15
+script = ExtResource("1_base")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("BoxShape_Base")
+
+[node name="BaseMesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("BoxMesh_Base")
+
+[node name="HealthLabel" type="Label3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 0)
+pixel_size = 0.05
+billboard = 1
+text = "1000/1000"
+font_size = 48
+outline_size = 4
+horizontal_alignment = 1

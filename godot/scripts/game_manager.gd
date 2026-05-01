@@ -1,162 +1,140 @@
 extends Node
 
-# Game Manager - Autoload Singleton for Game State
-# Handles: Game state, resources, victory conditions, scoring
+# Team constants
+const TEAM_PLAYER: int = 0
+const TEAM_ENEMY_1: int = 1
+const TEAM_ENEMY_2: int = 2
+const TEAM_NEUTRAL: int = 3
 
-enum GameState {
-    MENU,
-    LOADING,
-    PLAYING,
-    PAUSED,
-    GAME_OVER,
-    VICTORY
+# Team colors
+const TEAM_COLORS: Dictionary = {
+	TEAM_PLAYER: Color(0.2, 0.5, 1.0),   # Blue
+	TEAM_ENEMY_1: Color(1.0, 0.2, 0.2),  # Red
+	TEAM_ENEMY_2: Color(0.2, 1.0, 0.2),  # Green
+	TEAM_NEUTRAL: Color(0.5, 0.5, 0.5)    # Gray
 }
 
-enum GameMode {
-    SKIRMISH,
-    CAMPAIGN,
-    MULTIPLAYER
-}
-
-# Current state
-var current_state: GameState = GameState.MENU
-var current_mode: GameMode = GameMode.SKIRMISH
-
-# Resources
-var resources: Dictionary = {
-    "gold": 1000,
-    "wood": 500,
-    "stone": 300,
-    "food": 200
-}
-
-# Game settings
-var game_settings: Dictionary = {
-    "starting_resources": 1000,
-    "population_limit": 100,
-    "difficulty": "normal"
-}
-
-# Multiplayer
-var is_multiplayer: bool = false
-var local_player_id: int = 1
+# Game state
+enum GameState { PLAYING, PAUSED, VICTORY, DEFEAT }
 
 # Signals
-signal state_changed(new_state: GameState, old_state: GameState)
-signal resources_updated(resource_type: String, amount: int, total: int)
-signal game_over(victory: bool, stats: Dictionary)
-signal game_started(mode: GameMode, settings: Dictionary)
+signal gold_changed(team: int, amount: int)
+signal game_state_changed(state: GameState)
+signal base_destroyed(team: int)
+signal unit_spawned(unit: Unit)
+signal unit_died(unit: Unit)
 
-func _ready():
-    print("GameManager initialized")
-    process_mode = Node.PROCESS_MODE_ALWAYS
+# Game data
+var _team_gold: Dictionary = {}
+var _income_per_second: float = 5.0
+var _income_timer: float = 0.0
+var _game_state: GameState = GameState.PLAYING
+var _game_time: float = 0.0
+var _active_bases: Dictionary = {}
+var _player_base: Base = null
 
-func change_state(new_state: GameState):
-    if new_state == current_state:
-        return
-    
-    var old_state = current_state
-    current_state = new_state
-    
-    match new_state:
-        GameState.PLAYING:
-            _on_game_start()
-        GameState.PAUSED:
-            _on_game_pause()
-        GameState.GAME_OVER:
-            _on_game_over(false)
-        GameState.VICTORY:
-            _on_game_over(true)
-    
-    state_changed.emit(new_state, old_state)
-    print("Game state changed: %s -> %s" % [_state_to_string(old_state), _state_to_string(new_state)])
+# Unit costs
+const COST_UNIT_BASIC: int = 10
+const COST_UNIT_FAST: int = 15
+const COST_UNIT_TANK: int = 25
+const COST_TOWER: int = 50
 
-func start_game(mode: GameMode = GameMode.SKIRMISH, settings: Dictionary = {}):
-    current_mode = mode
-    is_multiplayer = (mode == GameMode.MULTIPLAYER)
-    
-    # Merge settings with defaults
-    for key in settings:
-        game_settings[key] = settings[key]
-    
-    # Initialize resources
-    _initialize_resources()
-    
-    change_state(GameState.PLAYING)
-    game_started.emit(mode, game_settings)
+func _ready() -> void:
+	# Initialize gold for all teams
+	for team in [TEAM_PLAYER, TEAM_ENEMY_1, TEAM_ENEMY_2]:
+		_team_gold[team] = 100
+	
+	print("GameManager initialized")
 
-func pause_game():
-    if current_state == GameState.PLAYING:
-        change_state(GameState.PAUSED)
-        get_tree().paused = true
+func _process(delta: float) -> void:
+	if _game_state != GameState.PLAYING:
+		return
+	
+	_game_time += delta
+	
+	# Passive income
+	_income_timer += delta
+	if _income_timer >= 1.0:
+		_income_timer -= 1.0
+		_distribute_income()
 
-func resume_game():
-    if current_state == GameState.PAUSED:
-        get_tree().paused = false
-        change_state(GameState.PLAYING)
+func _distribute_income() -> void:
+	for team in _team_gold.keys():
+		add_gold(team, int(_income_per_second))
 
-func end_game(victory: bool = false):
-    if victory:
-        change_state(GameState.VICTORY)
-    else:
-        change_state(GameState.GAME_OVER)
+func get_gold(team: int) -> int:
+	return _team_gold.get(team, 0)
 
-func add_resources(type: String, amount: int):
-    if resources.has(type):
-        resources[type] += amount
-        resources_updated.emit(type, amount, resources[type])
+func add_gold(team: int, amount: int) -> void:
+	if amount <= 0:
+		return
+	_team_gold[team] = _team_gold.get(team, 0) + amount
+	gold_changed.emit(team, _team_gold[team])
 
-func spend_resources(type: String, amount: int) -> bool:
-    if not resources.has(type) or resources[type] < amount:
-        return false
-    
-    resources[type] -= amount
-    resources_updated.emit(type, -amount, resources[type])
-    return true
+func spend_gold(team: int, amount: int) -> bool:
+	if get_gold(team) >= amount:
+		_team_gold[team] -= amount
+		gold_changed.emit(team, _team_gold[team])
+		return true
+	return false
 
-func can_afford(costs: Dictionary) -> bool:
-    for type in costs:
-        if not resources.has(type) or resources[type] < costs[type]:
-            return false
-    return true
+func can_afford(team: int, cost: int) -> bool:
+	return get_gold(team) >= cost
 
-func get_resource(type: String) -> int:
-    return resources.get(type, 0)
+func get_game_state() -> GameState:
+	return _game_state
 
-func _initialize_resources():
-    resources["gold"] = game_settings.starting_resources
-    resources["wood"] = game_settings.starting_resources / 2
-    resources["stone"] = game_settings.starting_resources / 3
-    resources["food"] = game_settings.starting_resources / 5
+func get_game_time() -> float:
+	return _game_time
 
-func _on_game_start():
-    print("Game started in mode: %s" % _mode_to_string(current_mode))
+func set_player_base(base_node: Base) -> void:
+	_player_base = base_node
 
-func _on_game_pause():
-    print("Game paused")
+func get_player_base() -> Base:
+	return _player_base
 
-func _on_game_over(victory: bool):
-    var stats = {
-        "duration": 0,  # TODO: Track game duration
-        "resources_gathered": resources.duplicate(),
-        "victory": victory
-    }
-    game_over.emit(victory, stats)
-    print("Game over. Victory: %s" % victory)
+func register_base(base_node: Base) -> void:
+	_active_bases[base_node.team_id] = base_node
+	base_node.destroyed.connect(_on_base_destroyed)
 
-func _state_to_string(state: GameState) -> String:
-    match state:
-        GameState.MENU: return "MENU"
-        GameState.LOADING: return "LOADING"
-        GameState.PLAYING: return "PLAYING"
-        GameState.PAUSED: return "PAUSED"
-        GameState.GAME_OVER: return "GAME_OVER"
-        GameState.VICTORY: return "VICTORY"
-        _: return "UNKNOWN"
+func _on_base_destroyed(team: int) -> void:
+	base_destroyed.emit(team)
+	_active_bases.erase(team)
+	
+	if team == TEAM_PLAYER:
+		_set_game_over(GameState.DEFEAT)
+	elif _active_bases.size() == 1 and _active_bases.has(TEAM_PLAYER):
+		_set_game_over(GameState.VICTORY)
 
-func _mode_to_string(mode: GameMode) -> String:
-    match mode:
-        GameMode.SKIRMISH: return "SKIRMISH"
-        GameMode.CAMPAIGN: return "CAMPAIGN"
-        GameMode.MULTIPLAYER: return "MULTIPLAYER"
-        _: return "UNKNOWN"
+func _set_game_over(state: GameState) -> void:
+	_game_state = state
+	game_state_changed.emit(state)
+	print("Game Over! State: " + str(state))
+
+func reset_game() -> void:
+	_game_state = GameState.PLAYING
+	_game_time = 0.0
+	_income_timer = 0.0
+	_active_bases.clear()
+	_player_base = null
+	for team in [TEAM_PLAYER, TEAM_ENEMY_1, TEAM_ENEMY_2]:
+		_team_gold[team] = 100
+	
+	# Reload scene
+	get_tree().reload_current_scene()
+
+func is_playing() -> bool:
+	return _game_state == GameState.PLAYING
+
+func get_remaining_enemy_teams() -> Array[int]:
+	var enemies: Array[int] = []
+	for team in _active_bases.keys():
+		if team != TEAM_PLAYER:
+			enemies.append(team)
+	return enemies
+
+func get_random_enemy_team() -> int:
+	var enemies = get_remaining_enemy_teams()
+	if enemies.is_empty():
+		return TEAM_NEUTRAL
+	return enemies[randi() % enemies.size()]
