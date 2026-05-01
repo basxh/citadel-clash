@@ -1,0 +1,57 @@
+[gd_scene load_steps=6 format=3 uid="uid://b1v4g4y5x6z7"]
+
+[ext_resource type="Script" path="res://scripts/main.gd" id="1_main"]
+
+[sub_resource type="PlaneMesh" id="PlaneMesh_ground"]
+size = Vector2(100, 100)
+
+[sub_resource type="StandardMaterial3D" id="StandardMaterial3D_ground"]
+albedo_color = Color(0.2, 0.5, 0.2, 1.0)
+
+[sub_resource type="WorldBoundaryShape3D" id="WorldBoundaryShape3D_ground"]
+plane = Plane(0, 1, 0, 0)
+
+[sub_resource type="Environment" id="Environment_default"]
+background_mode = 1
+background_color = Color(0.529412, 0.807843, 0.921569, 1)
+ambient_light_source = 2
+ambient_light_color = Color(0.4, 0.4, 0.4, 1.0)
+
+[sub_resource type="NavigationMesh" id="NavigationMesh_default"]
+
+[node name="Main" type="Node3D"]
+script = ExtResource("1_main")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_default")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 20, 0)
+shadow_enabled = true
+light_energy = 1.5
+
+[node name="CameraRig" type="Node3D" parent="."]
+
+[node name="Camera3D" type="Camera3D" parent="CameraRig"]
+transform = Transform3D(1, 0, 0, 0, 0.707107, 0.707107, 0, -0.707107, 0.707107, 0, 30, 30)
+fov = 60.0
+
+[node name="Terrain" type="NavigationRegion3D" parent="."]
+navigation_mesh = SubResource("NavigationMesh_default")
+
+[node name="Ground" type="MeshInstance3D" parent="Terrain"]
+mesh = SubResource("PlaneMesh_ground")
+surface_material_override/0 = SubResource("StandardMaterial3D_ground")
+
+[node name="StaticBody3D" type="StaticBody3D" parent="Terrain/Ground"]
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="Terrain/Ground/StaticBody3D"]
+shape = SubResource("WorldBoundaryShape3D_ground")
+
+[node name="Units" type="Node3D" parent="."]
+
+[node name="Buildings" type="Node3D" parent="."]
+
+[node name="Projectiles" type="Node3D" parent="."]
+
+[node name="GameWorld" type="Node3D" parent="."]

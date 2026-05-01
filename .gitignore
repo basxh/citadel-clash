@@ -1,0 +1,49 @@
+# Godot-specific files
+.godot/
+import/
+export.cfg
+export_presets.cfg
+
+# Godot 4+ specific
+*.translation
+
+# User-specific
+editor_data/
+
+# Builds
+builds/
+*.exe
+*.dll
+*.so
+*.dylib
+*.apk
+*.aab
+
+# Temporary files
+*.tmp
+*~
+
+# OS-specific
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE
+.vscode/
+.idea/
+*.code-workspace
+
+# Logs
+*.log
+
+# Backup files
+*.bak
+*.old
+
+# Mono/C# (if used in future)
+.mono/
+*.csproj
+*.sln
+
+# Asset imports (generated)
+assets/**/*.import
