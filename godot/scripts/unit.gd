@@ -2,7 +2,7 @@ extends CharacterBody3D
 class_name Unit
 
 # Team
-@export var team_id: int = GameManager.TEAM_PLAYER
+@export var team_id: int = 0  # 0 = Player, 1 = Enemy1, 2 = Enemy2
 
 # Stats
 @export var unit_type: String = "basic"
@@ -42,7 +42,8 @@ func _ready() -> void:
 func _update_color() -> void:
 	if _mesh:
 		var material = StandardMaterial3D.new()
-		material.albedo_color = GameManager.TEAM_COLORS.get(team_id, Color.WHITE)
+		var colors = {0: Color(0.2, 0.5, 1.0), 1: Color(1.0, 0.2, 0.2), 2: Color(0.2, 1.0, 0.2)}
+		material.albedo_color = colors.get(team_id, Color.WHITE)
 		material.roughness = 0.5
 		_mesh.material_override = material
 

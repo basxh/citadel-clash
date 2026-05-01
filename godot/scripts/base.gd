@@ -2,11 +2,16 @@ extends StaticBody3D
 class_name Base
 
 # Team identification
-@export var team_id: int = GameManager.TEAM_PLAYER
+@export var team_id: int = 0  # 0 = Player (Blue), 1 = Enemy1 (Red), 2 = Enemy2 (Green)
 
 # Health
 @export var max_health: float = 1000.0
 var current_health: float = max_health
+
+# Constants
+const TEAM_PLAYER: int = 0
+const TEAM_ENEMY_1: int = 1
+const TEAM_ENEMY_2: int = 2
 
 # Signals
 signal destroyed(team: int)
@@ -24,7 +29,7 @@ func _ready() -> void:
 	
 	# Register with GameManager (Autoload)
 	GameManager.register_base(self)
-	if team_id == GameManager.TEAM_PLAYER:
+	if team_id == TEAM_PLAYER:
 		GameManager.set_player_base(self)
 	
 	print("Base initialized - Team: " + str(team_id))

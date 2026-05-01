@@ -2,7 +2,7 @@ extends StaticBody3D
 class_name Tower
 
 # Team
-@export var team_id: int = GameManager.TEAM_PLAYER
+@export var team_id: int = 0  # 0 = Player, 1 = Enemy1, 2 = Enemy2
 
 # Stats
 @export var range: float = 8.0
@@ -34,7 +34,8 @@ func _ready() -> void:
 func _update_color() -> void:
 	if _mesh:
 		var material = StandardMaterial3D.new()
-		material.albedo_color = GameManager.TEAM_COLORS.get(team_id, Color.WHITE)
+		var colors = {0: Color(0.2, 0.5, 1.0), 1: Color(1.0, 0.2, 0.2), 2: Color(0.2, 1.0, 0.2)}
+		material.albedo_color = colors.get(team_id, Color.WHITE)
 		material.roughness = 0.4
 		_mesh.material_override = material
 
@@ -164,7 +165,9 @@ func show_range_indicator() -> void:
 		_range_indicator.mesh = mesh
 		
 		var material = StandardMaterial3D.new()
-		material.albedo_color = Color(GameManager.TEAM_COLORS.get(team_id, Color.WHITE), 0.3)
+		var colors = {0: Color(0.2, 0.5, 1.0), 1: Color(1.0, 0.2, 0.2), 2: Color(0.2, 1.0, 0.2)}
+		var team_color = colors.get(team_id, Color.WHITE)
+		material.albedo_color = Color(team_color.r, team_color.g, team_color.b, 0.3)
 		material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
 		_range_indicator.material_override = material
 

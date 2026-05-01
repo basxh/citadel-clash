@@ -1,6 +1,13 @@
 extends Control
 class_name GameUI
 
+# Constants
+const TEAM_PLAYER: int = 0
+const COST_UNIT_BASIC: int = 10
+const COST_UNIT_FAST: int = 15
+const COST_UNIT_TANK: int = 25
+const COST_TOWER: int = 50
+
 # References
 @onready var _gold_label: Label = %GoldLabel
 @onready var _hp_bar: ProgressBar = %HPBar
@@ -44,11 +51,11 @@ func _setup_unit_buttons() -> void:
 	var tank_btn = %TankUnitButton
 	
 	if basic_btn:
-		basic_btn.pressed.connect(func(): _on_buy_unit("basic", GameManager.COST_UNIT_BASIC))
+		basic_btn.pressed.connect(func(): _on_buy_unit("basic", COST_UNIT_BASIC))
 	if fast_btn:
-		fast_btn.pressed.connect(func(): _on_buy_unit("fast", GameManager.COST_UNIT_FAST))
+		fast_btn.pressed.connect(func(): _on_buy_unit("fast", COST_UNIT_FAST))
 	if tank_btn:
-		tank_btn.pressed.connect(func(): _on_buy_unit("tank", GameManager.COST_UNIT_TANK))
+		tank_btn.pressed.connect(func(): _on_buy_unit("tank", COST_UNIT_TANK))
 
 func _process(_delta: float) -> void:
 	_update_timer()
@@ -56,7 +63,7 @@ func _process(_delta: float) -> void:
 
 func _update_ui() -> void:
 	if GameManager:
-		_on_gold_changed(GameManager.TEAM_PLAYER, GameManager.get_gold(GameManager.TEAM_PLAYER))
+		_on_gold_changed(TEAM_PLAYER, GameManager.get_gold(TEAM_PLAYER))
 
 func _update_timer() -> void:
 	if GameManager:
@@ -75,7 +82,7 @@ func _update_hp_bar() -> void:
 			_hp_bar.get_node("Label").text = "Base HP: %d/%d" % [int(base.current_health), int(base.max_health)]
 
 func _on_gold_changed(team: int, amount: int) -> void:
-	if team == GameManager.TEAM_PLAYER:
+	if team == TEAM_PLAYER:
 		if _gold_label:
 			_gold_label.text = "Gold: %d" % amount
 		
@@ -83,23 +90,23 @@ func _on_gold_changed(team: int, amount: int) -> void:
 		_update_button_states()
 
 func _update_button_states() -> void:
-	var gold = GameManager.get_gold(GameManager.TEAM_PLAYER)
+	var gold = GameManager.get_gold(TEAM_PLAYER)
 	
 	var basic_btn = %BasicUnitButton
 	var fast_btn = %FastUnitButton
 	var tank_btn = %TankUnitButton
 	
 	if basic_btn:
-		basic_btn.disabled = gold < GameManager.COST_UNIT_BASIC
+		basic_btn.disabled = gold < COST_UNIT_BASIC
 	if fast_btn:
-		fast_btn.disabled = gold < GameManager.COST_UNIT_FAST
+		fast_btn.disabled = gold < COST_UNIT_FAST
 	if tank_btn:
-		tank_btn.disabled = gold < GameManager.COST_UNIT_TANK
+		tank_btn.disabled = gold < COST_UNIT_TANK
 	if _build_button:
-		_build_button.disabled = gold < GameManager.COST_TOWER
+		_build_button.disabled = gold < COST_TOWER
 
 func _on_buy_unit(unit_type: String, cost: int) -> void:
-	if GameManager.spend_gold(GameManager.TEAM_PLAYER, cost):
+	if GameManager.spend_gold(TEAM_PLAYER, cost):
 		buy_unit_requested.emit(unit_type)
 
 func _on_build_pressed() -> void:
@@ -118,7 +125,7 @@ func _on_restart_pressed() -> void:
 	if GameManager:
 		GameManager.reset_game()
 
-func _on_game_state_changed(state: GameManager.GameState) -> void:
+func _on_game_state_changed(state) -> void:
 	match state:
 		GameManager.GameState.VICTORY:
 			_show_game_over("VICTORY!", Color.GREEN)

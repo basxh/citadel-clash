@@ -1,8 +1,14 @@
 extends Node
 class_name AIController
 
+# Constants
+const COST_UNIT_BASIC: int = 10
+const COST_UNIT_FAST: int = 15
+const COST_UNIT_TANK: int = 25
+const COST_TOWER: int = 50
+
 # Team this AI controls
-@export var team_id: int = GameManager.TEAM_ENEMY_1
+@export var team_id: int = 1  # 1 = Enemy1 (Red), 2 = Enemy2 (Green)
 
 # AI Settings
 @export var unit_spawn_interval: float = 5.0
@@ -84,10 +90,10 @@ func _select_unit_type() -> String:
 
 func _get_unit_cost(unit_type: String) -> int:
 	match unit_type:
-		"basic": return GameManager.COST_UNIT_BASIC
-		"fast": return GameManager.COST_UNIT_FAST
-		"tank": return GameManager.COST_UNIT_TANK
-	return GameManager.COST_UNIT_BASIC
+		"basic": return COST_UNIT_BASIC
+		"fast": return COST_UNIT_FAST
+		"tank": return COST_UNIT_TANK
+	return COST_UNIT_BASIC
 
 func _spawn_unit(unit_type: String) -> void:
 	if _base_position == Vector3.ZERO:
@@ -107,13 +113,13 @@ func _try_build_tower() -> void:
 	# Add randomness
 	_tower_timer = randf() * randomness_factor * tower_build_interval
 	
-	if not GameManager.can_afford(team_id, GameManager.COST_TOWER):
+	if not GameManager.can_afford(team_id, COST_TOWER):
 		return
 	
 	# Find a good position near base
 	var build_pos = _find_tower_position()
 	if build_pos != Vector3.ZERO:
-		GameManager.spend_gold(team_id, GameManager.COST_TOWER)
+		GameManager.spend_gold(team_id, COST_TOWER)
 		ai_build_tower_requested.emit(build_pos, team_id)
 
 func _find_tower_position() -> Vector3:

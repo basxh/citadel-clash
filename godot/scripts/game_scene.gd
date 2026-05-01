@@ -47,7 +47,7 @@ func _on_buy_unit(unit_type: String) -> void:
 	# Spawn unit at player base
 	var player_base = GameManager.get_player_base()
 	if player_base:
-		_spawn_unit(unit_type, GameManager.TEAM_PLAYER, player_base.global_position + Vector3(randf() - 0.5, 0, randf() - 0.5) * 3)
+		_spawn_unit(unit_type, 0, player_base.global_position + Vector3(randf() - 0.5, 0, randf() - 0.5) * 3)
 
 func _on_build_mode_toggled(active: bool) -> void:
 	_build_mode = active
@@ -96,13 +96,13 @@ func _try_build_tower() -> void:
 	var pos = _build_preview.global_position
 	
 	# Check if we can afford
-	if not GameManager.can_afford(GameManager.TEAM_PLAYER, GameManager.COST_TOWER):
+	if not GameManager.can_afford(0, 50):
 		return
 	
 	# Check if position is valid (not too close to other towers)
 	if _is_position_valid_for_tower(pos):
-		GameManager.spend_gold(GameManager.TEAM_PLAYER, GameManager.COST_TOWER)
-		_build_tower(pos, GameManager.TEAM_PLAYER)
+		GameManager.spend_gold(0, 50)
+		_build_tower(pos, 0)
 		_on_build_mode_toggled(false)
 
 func _is_position_valid_for_tower(pos: Vector3) -> bool:
@@ -114,7 +114,8 @@ func _is_position_valid_for_tower(pos: Vector3) -> bool:
 
 func _build_tower(pos: Vector3, team: int) -> void:
 	var tower = _tower_template.instantiate() as Tower
-	tower.global_position = pos	tower.team_id = team
+	tower.global_position = pos
+	tower.team_id = team
 	_towers_container.add_child(tower)
 
 func _spawn_unit(unit_type: String, team: int, spawn_pos: Vector3) -> void:
