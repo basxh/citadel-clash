@@ -41,6 +41,7 @@ func _ready() -> void:
 	
 	# Connect UI signals
 	_ui.buy_unit_requested.connect(_on_buy_unit)
+	_ui.buy_unit_requested_with_target.connect(_on_buy_unit_with_target)
 	_ui.build_mode_toggled.connect(_on_build_mode_toggled)
 	_ui.difficulty_selected.connect(_on_difficulty_selected)
 	
@@ -93,10 +94,16 @@ func _input(event: InputEvent) -> void:
 		_select_entity_at_mouse()
 
 func _on_buy_unit(unit_type: String) -> void:
-	# Spawn unit at player base
+	# Legacy - default to Enemy 1
+	_on_buy_unit_with_target(unit_type, 1)
+
+func _on_buy_unit_with_target(unit_type: String, target_team: int) -> void:
+	# Spawn unit at player base targeting specific enemy
 	var player_base = GameManager.get_player_base()
 	if player_base:
-		_spawn_unit(unit_type, 0, player_base.global_position + Vector3(randf() - 0.5, 0, randf() - 0.5) * 3)
+		var path_id = UnitPathing.get_path_for_target(target_team)
+		_spawn_unit(unit_type, 0, player_base.global_position + Vector3(randf() - 0.5, 0, randf() - 0.5) * 3, path_id, target_team)
+		print("GameScene: Player spawned ", unit_type, " targeting Team ", target_team, " on Path ", path_id)
 
 func _on_difficulty_selected(team: int, difficulty: String) -> void:
 	GameManager.set_enemy_difficulty(team, difficulty)
@@ -130,11 +137,18 @@ func _build_tower(pos: Vector3, team: int) -> void:
 	
 	_towers_container.add_child(tower)
 
-func _spawn_unit(unit_type: String, team: int, spawn_pos: Vector3) -> void:
+func _spawn_unit(unit_type: String, team: int, spawn_pos: Vector3, path_id: int = -1, target_team: int = -1) -> void:
 	var unit = _unit_template.instantiate() as Unit
 	unit.global_position = spawn_pos
 	unit.team_id = team
 	unit.set_stats_from_type(unit_type)
+	
+	# Set the path ID if provided, otherwise auto-detect
+	if path_id >= 0:
+		unit.path_id = path_id
+	elif target_team >= 0:
+		unit.path_id = UnitPathing.get_path_for_target(target_team)
+	
 	unit.add_to_group("units")
 	
 	# Connect selection signals
@@ -150,7 +164,9 @@ func _on_ai_spawn_unit(spawn_data: Dictionary) -> void:
 	var unit_type = spawn_data["type"]
 	var team = spawn_data["team"]
 	var pos = spawn_data["position"]
-	_spawn_unit(unit_type, team, pos)
+	var path_id = spawn_data.get("path_id", -1)
+	var target_team = spawn_data.get("target_team", -1)
+	_spawn_unit(unit_type, team, pos, path_id, target_team)
 
 func _on_ai_build_tower(pos: Vector3, team: int) -> void:
 	_build_tower(pos, team)

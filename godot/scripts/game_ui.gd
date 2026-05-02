@@ -17,6 +17,7 @@ class_name GameUI
 # State
 var _is_building: bool = false
 var _message_timer: Timer = null
+var _target_team: int = 1  # Default target is Enemy 1
 
 func _ready() -> void:
 	_connect_signals()
@@ -57,11 +58,44 @@ func _setup_unit_buttons() -> void:
 	var tank_btn = %TankUnitButton
 	
 	if basic_btn:
-		basic_btn.pressed.connect(func(): _on_buy_unit("basic", GameManager.COST_UNIT_BASIC))
+		basic_btn.pressed.connect(func(): _on_buy_unit("basic", GameManager.COST_UNIT_BASIC, _target_team))
 	if fast_btn:
-		fast_btn.pressed.connect(func(): _on_buy_unit("fast", GameManager.COST_UNIT_FAST))
+		fast_btn.pressed.connect(func(): _on_buy_unit("fast", GameManager.COST_UNIT_FAST, _target_team))
 	if tank_btn:
-		tank_btn.pressed.connect(func(): _on_buy_unit("tank", GameManager.COST_UNIT_TANK))
+		tank_btn.pressed.connect(func(): _on_buy_unit("tank", GameManager.COST_UNIT_TANK, _target_team))
+	
+	# Setup target selection buttons
+	_setup_target_buttons()
+
+func _setup_target_buttons() -> void:
+	var target_e1_btn = %TargetEnemy1Button
+	var target_e2_btn = %TargetEnemy2Button
+	
+	if target_e1_btn:
+		target_e1_btn.pressed.connect(func(): _set_target_team(1))
+		_update_target_button_style(target_e1_btn, true)
+	if target_e2_btn:
+		target_e2_btn.pressed.connect(func(): _set_target_team(2))
+		_update_target_button_style(target_e2_btn, false)
+
+func _set_target_team(team: int) -> void:
+	_target_team = team
+	
+	var target_e1_btn = %TargetEnemy1Button
+	var target_e2_btn = %TargetEnemy2Button
+	
+	if target_e1_btn:
+		_update_target_button_style(target_e1_btn, team == 1)
+	if target_e2_btn:
+		_update_target_button_style(target_e2_btn, team == 2)
+	
+	show_message("Target: Enemy " + str(team), 1.0)
+
+func _update_target_button_style(button: Button, is_active: bool) -> void:
+	if is_active:
+		button.modulate = Color(1.2, 1.2, 1.2)  # Highlight
+	else:
+		button.modulate = Color(1, 1, 1)  # Normal
 
 func _setup_difficulty_menu() -> void:
 	if _difficulty_menu:
@@ -136,9 +170,11 @@ func _update_button_states() -> void:
 	if _cancel_button:
 		_cancel_button.visible = _is_building
 
-func _on_buy_unit(unit_type: String, cost: int) -> void:
+func _on_buy_unit(unit_type: String, cost: int, target_team: int = 1) -> void:
 	if GameManager.can_afford(GameManager.TEAM_PLAYER, cost):
 		if GameManager.spend_gold(GameManager.TEAM_PLAYER, cost):
+			# Include target team in the signal
+			buy_unit_requested_with_target.emit(unit_type, target_team)
 			buy_unit_requested.emit(unit_type)
 	else:
 		show_message("Not enough gold!")
@@ -217,5 +253,6 @@ func hide_entity_info() -> void:
 
 # Signals
 signal buy_unit_requested(unit_type: String)
+signal buy_unit_requested_with_target(unit_type: String, target_team: int)
 signal build_mode_toggled(active: bool)
 signal difficulty_selected(team: int, difficulty: String)

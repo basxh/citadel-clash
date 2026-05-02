@@ -61,6 +61,8 @@ func _initialize_pathing() -> void:
 	
 	# Initialize with path
 	_pathing.initialize(self, path_id)
+	
+	print("Unit initialized - Team: ", team_id, ", Path: ", path_id)
 
 func _update_color() -> void:
 	if _mesh:

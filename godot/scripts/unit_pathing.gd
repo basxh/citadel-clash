@@ -255,15 +255,26 @@ func get_progress() -> Dictionary:
 		"has_reached_base": _has_reached_base
 	}
 
-## Static helper - get path for a team
+## Static helper - get path for a team targeting a specific enemy team
+static func get_path_for_target(target_team: int) -> int:
+	"""
+	Returns the path ID that leads to the target team's base.
+	Path 0 leads to Team 0 (Player) base
+	Path 1 leads to Team 1 (Enemy1) base
+	Path 2 leads to Team 2 (Enemy2) base
+	"""
+	return target_team
+
+## Static helper - get path for a team (legacy, defaults to attacking player)
 static func get_path_for_team(team_id: int) -> int:
 	"""
+	DEPRECATED: Use get_path_for_target(target_team) instead.
 	Team 0 (Player) attacks along paths 1 and 2 (to enemy bases)
 	Team 1 attacks along path 0 (to player base)
 	Team 2 attacks along path 0 (to player base)
 	"""
 	match team_id:
-		0: return 0  # Player's defending path
+		0: return 1  # Player attacks enemy 1 by default
 		1: return 0  # Enemy 1 attacks path 0 (player base)
 		2: return 0  # Enemy 2 attacks path 0 (player base)
 		_: return 0
