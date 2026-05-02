@@ -57,12 +57,26 @@ func _setup_unit_buttons() -> void:
 	var fast_btn = %FastUnitButton
 	var tank_btn = %TankUnitButton
 	
+	print("[DEBUG UI] Setting up unit buttons...")
+	print("[DEBUG UI] Basic button: ", basic_btn != null)
+	print("[DEBUG UI] Fast button: ", fast_btn != null)
+	print("[DEBUG UI] Tank button: ", tank_btn != null)
+	
 	if basic_btn:
-		basic_btn.pressed.connect(func(): _on_buy_unit("basic", GameManager.COST_UNIT_BASIC, _target_team))
+		basic_btn.pressed.connect(func(): 
+			print("[DEBUG UI] Basic button pressed!")
+			_on_buy_unit("basic", GameManager.COST_UNIT_BASIC, _target_team)
+		)
 	if fast_btn:
-		fast_btn.pressed.connect(func(): _on_buy_unit("fast", GameManager.COST_UNIT_FAST, _target_team))
+		fast_btn.pressed.connect(func(): 
+			print("[DEBUG UI] Fast button pressed!")
+			_on_buy_unit("fast", GameManager.COST_UNIT_FAST, _target_team)
+		)
 	if tank_btn:
-		tank_btn.pressed.connect(func(): _on_buy_unit("tank", GameManager.COST_UNIT_TANK, _target_team))
+		tank_btn.pressed.connect(func(): 
+			print("[DEBUG UI] Tank button pressed!")
+			_on_buy_unit("tank", GameManager.COST_UNIT_TANK, _target_team)
+		)
 	
 	# Setup target selection buttons
 	_setup_target_buttons()
@@ -125,6 +139,13 @@ func _process(_delta: float) -> void:
 	_update_hp_bar()
 	_update_button_states()
 
+# DEBUG: Manual button test
+func _input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed:
+		if event.keycode == KEY_U:  # U key for unit spawn test
+			print("[DEBUG UI] Manual unit spawn test triggered")
+			_on_buy_unit("basic", GameManager.COST_UNIT_BASIC, 1)
+
 func _update_ui() -> void:
 	if GameManager:
 		_on_gold_changed(GameManager.TEAM_PLAYER, GameManager.get_gold(GameManager.TEAM_PLAYER))
@@ -171,12 +192,20 @@ func _update_button_states() -> void:
 		_cancel_button.visible = _is_building
 
 func _on_buy_unit(unit_type: String, cost: int, target_team: int = 1) -> void:
+	print("[DEBUG UI] _on_buy_unit called: ", unit_type, " cost: ", cost, " target: ", target_team)
+	var current_gold = GameManager.get_gold(GameManager.TEAM_PLAYER)
+	print("[DEBUG UI] Current gold: ", current_gold, " can afford: ", current_gold >= cost)
+	
 	if GameManager.can_afford(GameManager.TEAM_PLAYER, cost):
+		print("[DEBUG UI] Can afford, spending gold...")
 		if GameManager.spend_gold(GameManager.TEAM_PLAYER, cost):
+			print("[DEBUG UI] Gold spent, emitting signals...")
 			# Include target team in the signal
 			buy_unit_requested_with_target.emit(unit_type, target_team)
 			buy_unit_requested.emit(unit_type)
+			print("[DEBUG UI] Signals emitted!")
 	else:
+		print("[DEBUG UI] Not enough gold!")
 		show_message("Not enough gold!")
 
 func _on_build_pressed() -> void:

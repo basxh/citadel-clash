@@ -35,6 +35,7 @@ var _has_reached_base: bool = false
 var _base_to_attack: Base = null
 
 func _ready():
+	print("[DEBUG PATHING] _ready() called on UnitPathing")
 	call_deferred("_find_path_system")
 	
 	# Debug timer
@@ -46,19 +47,28 @@ func _ready():
 		add_child(timer)
 
 func _find_path_system():
+	print("[DEBUG PATHING] _find_path_system() called")
 	var root = get_tree().current_scene
 	if root:
 		_path_system = root.get_node_or_null("PathSystem")
 		if _path_system:
-			print("UnitPathing: PathSystem found")
+			print("[DEBUG PATHING] PathSystem found!")
 		else:
+			print("[DEBUG PATHING] PathSystem NOT found in scene!")
 			push_warning("UnitPathing: PathSystem not found!")
+	else:
+		print("[DEBUG PATHING] No current scene!")
 
 ## Initialize pathing for a unit
 ## spawn_position: Where the unit spawns (should be center arena)
 ## path_id: Which path to follow (0, 1, or 2 - matches target base team)
 ## target_team: Which base to attack (0, 1, or 2)
 func initialize(unit: Unit, path_id: int, target_team: int = -1) -> void:
+	print("[DEBUG PATHING] initialize() called")
+	print("[DEBUG PATHING]   unit: ", unit != null)
+	print("[DEBUG PATHING]   path_id: ", path_id)
+	print("[DEBUG PATHING]   target_team: ", target_team)
+	
 	_unit = unit
 	_path_id = path_id
 	_target_team = target_team if target_team >= 0 else path_id
@@ -67,20 +77,16 @@ func initialize(unit: Unit, path_id: int, target_team: int = -1) -> void:
 		_find_path_system()
 	
 	if _path_system:
+		print("[DEBUG PATHING]   PathSystem found, getting waypoints...")
 		_waypoints = _path_system.get_path(path_id)
+		print("[DEBUG PATHING]   Waypoints count: ", _waypoints.size())
 		if _waypoints.size() > 0:
 			_is_following_path = true
 			_current_waypoint_index = 0
 			_has_reached_base = false
 			
-			# IMPORTANT: Unit spawns in CENTER, not at first waypoint
-			# First waypoint is the start of the path TO the target
-			# Unit should move from center TO first waypoint
-			
-			print("UnitPathing: Initialized - Path: ", path_id, 
-				" Target: ", _target_team, 
-				" Waypoints: ", _waypoints.size(),
-				" Spawn at center, move to waypoint 0: ", _waypoints[0])
+			print("[DEBUG PATHING]   Initialized successfully!")
+			print("[DEBUG PATHING]   First waypoint: ", _waypoints[0])
 		else:
 			push_warning("UnitPathing: No waypoints found for path " + str(path_id))
 	else:

@@ -81,52 +81,66 @@ func _setup_path_visualization():
         _draw_path_lines(path_id)
 
 func _create_waypoint_marker(pos: Vector3, color: Color, index: int) -> MeshInstance3D:
-    """Create a visual marker for a waypoint"""
+    """Create a visual marker for a waypoint - ENHANCED VISIBILITY"""
     var mesh_instance = MeshInstance3D.new()
     
     var cylinder = CylinderMesh.new()
-    cylinder.top_radius = 0.3
-    cylinder.bottom_radius = 0.3
-    cylinder.height = 0.1
+    # LARGER markers for better visibility
+    cylinder.top_radius = 0.8
+    cylinder.bottom_radius = 0.8
+    cylinder.height = 0.3
     
     var material = StandardMaterial3D.new()
     material.albedo_color = color
     material.emission_enabled = true
     material.emission = color
-    material.emission_energy_multiplier = 0.3
+    material.emission_energy_multiplier = 1.0
     
     mesh_instance.mesh = cylinder
     mesh_instance.material_override = material
+    mesh_instance.cast_shadow = false
     mesh_instance.position = pos
     mesh_instance.name = "Waypoint_%d" % index
     
     return mesh_instance
 
 func _draw_path_lines(path_id: int):
-    """Draw lines connecting waypoints"""
+    """Draw lines connecting waypoints - ENHANCED VISIBILITY"""
     var path = paths[path_id]
     var color = PATH_COLORS[path_id]
     
     for i in range(path.size() - 1):
+        # Draw thicker, more visible lines
         var line = _create_path_line(path[i], path[i + 1], color)
         add_child(line)
         path_visualizers[path_id].append(line)
+        
+        # Add a second line slightly above for visibility
+        var line_glow = _create_path_line(path[i] + Vector3.UP * 0.05, path[i + 1] + Vector3.UP * 0.05, Color.WHITE)
+        line_glow.scale = Vector3(0.5, 0.5, 1.0)
+        add_child(line_glow)
+        path_visualizers[path_id].append(line_glow)
 
 func _create_path_line(start: Vector3, end: Vector3, color: Color) -> MeshInstance3D:
-    """Create a line mesh between two points"""
+    """Create a line mesh between two points - ENHANCED VISIBILITY"""
     var mesh_instance = MeshInstance3D.new()
     
     var distance = start.distance_to(end)
     var box = BoxMesh.new()
-    box.size = Vector3(0.2, 0.05, distance)
+    # THICKER lines for better visibility
+    box.size = Vector3(0.8, 0.15, distance)
     
     var material = StandardMaterial3D.new()
     material.albedo_color = color
+    material.emission_enabled = true
+    material.emission = color
+    material.emission_energy_multiplier = 0.8
     material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-    material.albedo_color.a = 0.5
+    material.albedo_color.a = 0.7
     
     mesh_instance.mesh = box
     mesh_instance.material_override = material
+    mesh_instance.cast_shadow = false
     
     # Position and rotate to connect points
     mesh_instance.position = (start + end) / 2.0

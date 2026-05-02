@@ -43,6 +43,15 @@ signal deselected()
 @onready var _selection_ring: MeshInstance3D = $SelectionRing
 
 func _ready() -> void:
+	print("[DEBUG UNIT] _ready called")
+	print("[DEBUG UNIT] Position: ", position)
+	print("[DEBUG UNIT] Global position: ", global_position)
+	
+	# UNIT VISIBILITY DEBUG: Ensure unit is visible and properly scaled
+	visible = true
+	scale = Vector3(1, 1, 1)
+	print("[UNIT] Visible: ", visible, " at: ", position)
+	
 	_update_color()
 	_update_health_bar()
 	
@@ -51,12 +60,17 @@ func _ready() -> void:
 		_selection_ring.visible = false
 	
 	# Initialize pathing system
+	print("[DEBUG UNIT] Initializing pathing...")
 	_initialize_pathing()
 	
 	print("Unit spawned - Team: " + str(team_id) + ", Type: " + unit_type)
 
 func initialize(spawn_team: int, target: int) -> void:
 	"""Initialize the unit with spawn and target info"""
+	print("[DEBUG UNIT] initialize() called")
+	print("[DEBUG UNIT]   spawn_team: ", spawn_team)
+	print("[DEBUG UNIT]   target: ", target)
+	
 	sender_team = spawn_team
 	target_team = target
 	team_id = spawn_team  # Keep compatibility with existing code
@@ -66,14 +80,19 @@ func initialize(spawn_team: int, target: int) -> void:
 
 func _initialize_pathing() -> void:
 	"""Initialize the pathing component"""
+	print("[DEBUG UNIT] _initialize_pathing() called")
+	print("[DEBUG UNIT]   Creating UnitPathing node...")
+	
 	_pathing = UnitPathing.new()
 	add_child(_pathing)
+	print("[DEBUG UNIT]   UnitPathing added as child")
 	
 	# Determine path: if target_team is set, use it; otherwise fall back to team_id
 	var effective_path = path_index if path_index >= 0 else UnitPathing.get_path_for_team(team_id)
 	if path_id < 0:
 		path_id = effective_path
 	
+	print("[DEBUG UNIT]   Calling pathing.initialize()...")
 	# Initialize with path
 	_pathing.initialize(self, path_id, target_team)
 	

@@ -58,29 +58,30 @@ func _ready() -> void:
 	# DEBUG: Add spawn test button (press T to run)
 	print("Game scene initialized with TowerPlacementSystem")
 	print("DEBUG: Press 'T' to run spawn test")
+	
+	# AUTO-SPAWN: Start auto spawn after 2 seconds
+	await get_tree().create_timer(2.0).timeout
+	start_auto_spawn()
+
+# =============================================================================
+# AUTO-SPAWN SYSTEM - Debug Feature
+# =============================================================================
+
+func start_auto_spawn() -> void:
+	print("[AUTO-SPAWN] Starting auto-spawn system (every 3 seconds)")
+	while true:
+		await get_tree().create_timer(3.0).timeout
+		_on_buy_unit_with_target("basic", 1)
+		print("[AUTO-SPAWN] Unit spawned to target 1")
 
 func _input(event: InputEvent) -> void:
 	# DEBUG: Test spawn system with 'T' key
 	if event is InputEventKey and event.pressed and not event.echo:
 		if event.keycode == KEY_T:
+			print("[DEBUG] T key pressed - running spawn test")
 			run_spawn_test()
 			return
-
-func _on_tower_placed(tower: Tower, zone: GridSystem.BuildZone) -> void:
-	"""Handle successful tower placement"""
-	tower.add_to_group("towers")
 	
-	# Connect selection signals
-	tower.selected.connect(_on_entity_selected)
-	tower.deselected.connect(_on_entity_deselected)
-	
-	_towers_container.add_child(tower)
-
-func _process(delta: float) -> void:
-	# Handle camera controls
-	_handle_camera_input(delta)
-
-func _input(event: InputEvent) -> void:
 	# Let tower placement system handle input first
 	if _tower_placement and _tower_placement.is_placing():
 		if event is InputEventMouseButton and event.pressed:
@@ -106,21 +107,39 @@ func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("unit_select") and not _build_mode:
 		_select_entity_at_mouse()
 
+func _on_tower_placed(tower: Tower, zone: GridSystem.BuildZone) -> void:
+	"""Handle successful tower placement"""
+	tower.add_to_group("towers")
+	
+	# Connect selection signals
+	tower.selected.connect(_on_entity_selected)
+	tower.deselected.connect(_on_entity_deselected)
+	
+	_towers_container.add_child(tower)
+
+func _process(delta: float) -> void:
+	# Handle camera controls
+	_handle_camera_input(delta)
+
 func _on_buy_unit(unit_type: String) -> void:
 	# Legacy - default to Enemy 1
 	_on_buy_unit_with_target(unit_type, 1)
 
 func _on_buy_unit_with_target(unit_type: String, target_team: int) -> void:
+	print("[DEBUG] _on_buy_unit_with_target called: ", unit_type, " target: ", target_team)
+	
 	# Spawn unit at CENTER targeting specific enemy
 	# All units spawn in center arena
 	var spawn_pos = Vector3.ZERO  # Center of map
+	print("[DEBUG] Spawn position: ", spawn_pos)
 	
 	# Get path for target
 	var path_id = UnitPathing.get_path_for_target(target_team)
+	print("[DEBUG] Path ID for target ", target_team, ": ", path_id)
 	
 	# Spawn with proper initialization
+	print("[DEBUG] Calling _spawn_unit_with_init...")
 	_spawn_unit_with_init(unit_type, 0, spawn_pos, path_id, target_team)
-	print("GameScene: Player (Team 0) spawned ", unit_type, " targeting Team ", target_team, " on Path ", path_id)
 
 func _on_difficulty_selected(team: int, difficulty: String) -> void:
 	GameManager.set_enemy_difficulty(team, difficulty)
@@ -156,7 +175,25 @@ func _build_tower(pos: Vector3, team: int) -> void:
 
 func _spawn_unit_with_init(unit_type: String, team: int, spawn_pos: Vector3, path_id: int, target_team: int) -> void:
 	"""Spawn unit with proper initialization - units spawn in center"""
+	print("[DEBUG] _spawn_unit_with_init called:")
+	print("[DEBUG]   unit_type: ", unit_type)
+	print("[DEBUG]   team: ", team)
+	print("[DEBUG]   spawn_pos: ", spawn_pos)
+	print("[DEBUG]   path_id: ", path_id)
+	print("[DEBUG]   target_team: ", target_team)
+	print("[DEBUG]   _unit_template is valid: ", _unit_template != null)
+	
+	if _unit_template == null:
+		print("[DEBUG ERROR] _unit_template is NULL!")
+		return
+	
 	var unit = _unit_template.instantiate() as Unit
+	print("[DEBUG] Unit instantiated: ", unit != null)
+	
+	if unit == null:
+		print("[DEBUG ERROR] Unit instantiation failed!")
+		return
+	
 	unit.global_position = spawn_pos  # Center position
 	unit.set_stats_from_type(unit_type)
 	
@@ -164,14 +201,16 @@ func _spawn_unit_with_init(unit_type: String, team: int, spawn_pos: Vector3, pat
 	unit.initialize(team, target_team)
 	
 	unit.add_to_group("units")
+	print("[DEBUG] Unit added to 'units' group")
 	
 	# Connect selection signals
 	unit.selected.connect(_on_entity_selected)
 	unit.deselected.connect(_on_entity_deselected)
 	
 	_units_container.add_child(unit)
-	
-	print("GameScene: Unit spawned at ", spawn_pos, " | Sender: ", team, " | Target: ", target_team, " | Path: ", path_id)
+	print("[DEBUG] Unit added to _units_container")
+	print("[DEBUG] Unit position after add: ", unit.position)
+	print("[DEBUG] Unit visible? ", unit.visible)
 	
 	if GameManager:
 		GameManager.unit_spawned.emit(unit)
