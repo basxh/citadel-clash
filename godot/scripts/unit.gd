@@ -18,7 +18,11 @@ var _target_base: Base = null
 var _is_attacking: bool = false
 var _attack_timer: float = 0.0
 
-# Navigation
+# Pathing System
+var _pathing: UnitPathing = null
+@export var path_id: int = -1  # Path to follow (-1 = auto-detect)
+
+# Navigation (legacy - will be removed once pathing works)
 var _path_points: Array[Vector3] = []
 var _current_path_index: int = 0
 
@@ -41,10 +45,22 @@ func _ready() -> void:
 	if _selection_ring:
 		_selection_ring.visible = false
 	
-	# Find target base
-	_find_target_base()
+	# Initialize pathing system
+	_initialize_pathing()
 	
 	print("Unit spawned - Team: " + str(team_id) + ", Type: " + unit_type)
+
+func _initialize_pathing() -> void:
+	"""Initialize the pathing component"""
+	_pathing = UnitPathing.new()
+	add_child(_pathing)
+	
+	# Auto-detect path if not set
+	if path_id < 0:
+		path_id = UnitPathing.get_path_for_team(team_id)
+	
+	# Initialize with path
+	_pathing.initialize(self, path_id)
 
 func _update_color() -> void:
 	if _mesh:
@@ -90,10 +106,15 @@ func _physics_process(delta: float) -> void:
 	if current_health <= 0:
 		return
 	
-	if _is_attacking:
-		_handle_attack(delta)
+	# Use pathing system if available
+	if _pathing and _pathing._is_following_path:
+		_pathing.update_movement(delta)
 	else:
-		_handle_movement(delta)
+		# Fallback to old behavior
+		if _is_attacking:
+			_handle_attack(delta)
+		else:
+			_handle_movement(delta)
 
 func _handle_movement(delta: float) -> void:
 	if _target_base == null or not is_instance_valid(_target_base):

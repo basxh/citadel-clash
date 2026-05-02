@@ -175,6 +175,10 @@ func _show_game_over(title: String, color: Color) -> void:
 		_game_over_title.text = title
 		_game_over_title.modulate = color
 
+func set_build_mode(active: bool) -> void:
+	_is_building = active
+	_update_button_states()
+
 func is_build_mode() -> bool:
 	return _is_building
 

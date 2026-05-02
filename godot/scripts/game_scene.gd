@@ -10,6 +10,7 @@ class_name GameScene
 @onready var _towers_container: Node3D = $Towers
 @onready var _ui: GameUI = $CanvasLayer/GameUI
 @onready var _camera: Camera3D = $Camera3D
+@onready var _grid_system: GridSystem = $GridSystem
 
 # Camera settings
 var _camera_zoom_min: float = 20.0
@@ -22,13 +23,21 @@ var _camera_velocity: Vector3 = Vector3.ZERO
 
 # Build mode
 var _build_mode: bool = false
-var _build_preview: MeshInstance3D = null
 
 # Selection
 var _selected_entity: Node3D = null
 
+# Tower placement system
+var _tower_placement: TowerPlacementSystem = null
+
 func _ready() -> void:
 	_camera_target_position = _camera.global_position
+	
+	# Setup TowerPlacementSystem
+	_tower_placement = TowerPlacementSystem.new()
+	_tower_placement.name = "TowerPlacementSystem"
+	add_child(_tower_placement)
+	_tower_placement.tower_placed.connect(_on_tower_placed)
 	
 	# Connect UI signals
 	_ui.buy_unit_requested.connect(_on_buy_unit)
@@ -41,23 +50,42 @@ func _ready() -> void:
 		ai.ai_spawn_unit_requested.connect(_on_ai_spawn_unit)
 		ai.ai_build_tower_requested.connect(_on_ai_build_tower)
 	
-	print("Game scene initialized")
+	print("Game scene initialized with TowerPlacementSystem")
+
+func _on_tower_placed(tower: Tower, zone: GridSystem.BuildZone) -> void:
+	"""Handle successful tower placement"""
+	tower.add_to_group("towers")
+	
+	# Connect selection signals
+	tower.selected.connect(_on_entity_selected)
+	tower.deselected.connect(_on_entity_deselected)
+	
+	_towers_container.add_child(tower)
 
 func _process(delta: float) -> void:
-	# Handle build preview
-	if _build_mode:
-		_update_build_preview()
-	
 	# Handle camera controls
 	_handle_camera_input(delta)
 
 func _input(event: InputEvent) -> void:
-	# Handle build placement and cancellation
-	if _build_mode:
-		if event.is_action_pressed("unit_select"):
-			_try_build_tower()
-		elif event.is_action_pressed("cancel_build"):
-			_cancel_build_mode()
+	# Let tower placement system handle input first
+	if _tower_placement and _tower_placement.is_placing():
+		if event is InputEventMouseButton and event.pressed:
+			if event.button_index == MOUSE_BUTTON_LEFT:
+				if _tower_placement.is_position_valid():
+					if GameManager.can_afford(0, GameManager.COST_TOWER):
+						GameManager.spend_gold(0, GameManager.COST_TOWER)
+						_tower_placement.try_place_tower(_tower_template)
+						_ui.show_message("Tower built!")
+					else:
+						_ui.show_message("Not enough gold!")
+				else:
+					_ui.show_message("Invalid placement! Build in a green zone.")
+				return
+			elif event.button_index == MOUSE_BUTTON_RIGHT:
+				_tower_placement.cancel_placement()
+				_build_mode = false
+				_ui.set_build_mode(false)
+				return
 		return
 	
 	# Handle unit/tower selection when not in build mode
@@ -78,118 +106,19 @@ func _on_build_mode_toggled(active: bool) -> void:
 	_build_mode = active
 	
 	if _build_mode:
-		_create_build_preview()
+		if _tower_placement:
+			_tower_placement.start_placement(0)  # Player team
 	else:
-		_destroy_build_preview()
+		if _tower_placement:
+			_tower_placement.cancel_placement()
 
 func _cancel_build_mode() -> void:
 	_on_build_mode_toggled(false)
 
-func _create_build_preview() -> void:
-	if _build_preview:
-		_build_preview.queue_free()
-	
-	_build_preview = MeshInstance3D.new()
-	_build_preview.name = "BuildPreview"
-	
-	# Create tower preview mesh
-	var mesh = BoxMesh.new()
-	mesh.size = Vector3(1.5, 2.5, 1.5)
-	_build_preview.mesh = mesh
-	
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color(0.5, 0.5, 1.0, 0.5)
-	material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	_build_preview.material_override = material
-	
-	# Add range indicator to preview
-	var range_indicator = MeshInstance3D.new()
-	var cylinder = CylinderMesh.new()
-	cylinder.top_radius = 10.0
-	cylinder.bottom_radius = 10.0
-	cylinder.height = 0.1
-	range_indicator.mesh = cylinder
-	
-	var range_material = StandardMaterial3D.new()
-	range_material.albedo_color = Color(0.3, 0.3, 1.0, 0.2)
-	range_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	range_indicator.material_override = range_material
-	range_indicator.position.y = -1.2
-	_build_preview.add_child(range_indicator)
-	
-	add_child(_build_preview)
 
-func _destroy_build_preview() -> void:
-	if _build_preview:
-		_build_preview.queue_free()
-		_build_preview = null
-
-func _update_build_preview() -> void:
-	if not _build_preview:
-		return
-	
-	var mouse_pos = get_viewport().get_mouse_position()
-	var from = _camera.project_ray_origin(mouse_pos)
-	var to = from + _camera.project_ray_normal(mouse_pos) * 1000
-	
-	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(from, to)
-	query.collision_mask = 1  # Terrain layer
-	
-	var result = space_state.intersect_ray(query)
-	if result:
-		_build_preview.global_position = result.position + Vector3.UP * 1.25
-		
-		# Check if position is valid and update color
-		var is_valid = _is_position_valid_for_tower(_build_preview.global_position)
-		var material = _build_preview.material_override as StandardMaterial3D
-		if is_valid:
-			material.albedo_color = Color(0.3, 1.0, 0.3, 0.6)  # Green
-		else:
-			material.albedo_color = Color(1.0, 0.3, 0.3, 0.6)  # Red
-
-func _try_build_tower() -> void:
-	if not _build_preview:
-		return
-	
-	var pos = _build_preview.global_position
-	
-	# Check if we can afford
-	if not GameManager.can_afford(0, GameManager.COST_TOWER):
-		_ui.show_message("Not enough gold!")
-		return
-	
-	# Check if position is valid
-	if not _is_position_valid_for_tower(pos):
-		_ui.show_message("Invalid placement!")
-		return
-	
-	GameManager.spend_gold(0, GameManager.COST_TOWER)
-	_build_tower(pos, 0)
-	_cancel_build_mode()
-
-func _is_position_valid_for_tower(pos: Vector3) -> bool:
-	# Check distance from other towers
-	for tower in _towers_container.get_children():
-		if pos.distance_to(tower.global_position) < 3.0:
-			return false
-	
-	# Check distance from player base (don't build on base)
-	var player_base = GameManager.get_player_base()
-	if player_base and pos.distance_to(player_base.global_position) < 4.0:
-		return false
-	
-	# Check if on terrain
-	var space_state = get_world_3d().direct_space_state
-	var query = PhysicsRayQueryParameters3D.create(pos + Vector3.UP * 10, pos - Vector3.UP * 10)
-	query.collision_mask = 1
-	var result = space_state.intersect_ray(query)
-	if not result:
-		return false
-	
-	return true
-
+# Build-related functions (legacy - kept for AI compatibility)
 func _build_tower(pos: Vector3, team: int) -> void:
+	"""Build tower at position (used by AI or direct placement)"""
 	var tower = _tower_template.instantiate() as Tower
 	tower.global_position = pos
 	tower.team_id = team

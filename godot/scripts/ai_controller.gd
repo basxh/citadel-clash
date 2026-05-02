@@ -155,23 +155,22 @@ func _get_unit_cost(unit_type: String) -> int:
 	return COST_UNIT_BASIC
 
 func _spawn_unit(unit_type: String) -> void:
-	if _base_position == Vector3.ZERO:
-		_find_base()
+	# Spawn at the center spawn arena (Path 0 start)
+	var spawn_pos = Vector3.ZERO  # Center spawn arena
 	
-	# Spawn near our base
-	var spawn_offset = Vector3(randf() - 0.5, 0, randf() - 0.5) * 4
+	# If we have a path system, get the proper spawn position
+	var path_system = get_tree().current_scene.get_node_or_null("PathSystem")
+	if path_system:
+		# All teams spawn at center
+		spawn_pos = path_system.get_start_position(0)
 	
-	# If under attack, spawn more towards enemies
-	if _base_under_attack:
-		var enemy_bases = _get_enemy_bases()
-		if not enemy_bases.is_empty():
-			var direction = (enemy_bases[0].global_position - _base_position).normalized()
-			spawn_offset += direction * 3
+	# Add small random offset for visual variety
+	var spawn_offset = Vector3(randf() - 0.5, 0, randf() - 0.5) * 2
 	
 	var spawn_data = {
 		"type": unit_type,
 		"team": team_id,
-		"position": _base_position + spawn_offset
+		"position": spawn_pos + spawn_offset
 	}
 	
 	ai_spawn_unit_requested.emit(spawn_data)
@@ -200,23 +199,90 @@ func _try_build_tower(config: Dictionary) -> void:
 	if not GameManager.can_afford(team_id, COST_TOWER):
 		return
 	
-	# Find the best position
-	var build_pos = _find_tower_position(config)
+	# Find the best position using BuildZones
+	var build_pos = _find_tower_position_in_zones()
 	if build_pos != Vector3.ZERO:
 		GameManager.spend_gold(team_id, COST_TOWER)
 		ai_build_tower_requested.emit(build_pos, team_id)
 
-func _find_tower_position(config: Dictionary) -> Vector3:
+func _find_tower_position_in_zones() -> Vector3:
+	"""Find a valid build position using the GridSystem"""
 	if _base_position == Vector3.ZERO:
+		_find_base()
+		if _base_position == Vector3.ZERO:
+			return Vector3.ZERO
+	
+	# Find GridSystem
+	var grid_system = get_tree().current_scene.get_node_or_null("GridSystem")
+	if not grid_system:
+		# Fallback to old behavior
+		return _find_tower_position_old()
+	
+	# Get buildable zones for this team
+	var zones = grid_system.get_buildable_zones(team_id)
+	
+	if zones.is_empty():
 		return Vector3.ZERO
 	
+	# Strategy: pick best zone based on defense needs
+	var best_zone = _select_best_zone(zones, grid_system)
+	
+	if best_zone:
+		return best_zone.world_position + Vector3.UP * 1.25
+	
+	return Vector3.ZERO
+
+func _select_best_zone(zones: Array, grid_system: GridSystem) -> GridSystem.BuildZone:
+	"""Select the best build zone based on current situation"""
+	var best_zone = null
+	var best_score = -999.0
+	
+	for zone in zones:
+		if zone.is_occupied:
+			continue
+		
+		var score = _evaluate_zone(zone)
+		if score > best_score:
+			best_score = score
+			best_zone = zone
+	
+	return best_zone
+
+func _evaluate_zone(zone: GridSystem.BuildZone) -> float:
+	"""Score a zone based on defensive value"""
+	var score = 0.0
+	
+	var zone_pos = zone.world_position
+	
+	# Closer to base = better defense (higher priority when under attack)
+	var dist_to_base = zone_pos.distance_to(_base_position)
+	if _base_under_attack:
+		score += (30.0 - dist_to_base) * 3.0  # Heavy weight when under attack
+	else:
+		score += (30.0 - dist_to_base) * 0.5
+	
+	# Check for nearby enemy units
+	var enemy_units = _get_enemy_units_in_range(_base_position, 25.0)
+	for enemy in enemy_units:
+		var dist = zone_pos.distance_to(enemy.global_position)
+		if dist < 10.0:
+			score += 20.0  # Good coverage of enemies
+		elif dist < 15.0:
+			score += 10.0
+	
+	# Prefer zones towards the center/lanes
+	var dist_to_center = zone_pos.distance_to(Vector3.ZERO)
+	score += dist_to_center * 0.2
+	
+	return score
+
+func _find_tower_position_old() -> Vector3:
+	"""Fallback positioning when GridSystem is not available"""
 	# Strategy depends on difficulty
 	if _base_under_attack:
-		# Build defensively - between base and enemies
 		return _find_defensive_position()
 	else:
-		# Build tactically - near base but towards lanes
-		return _find_tactical_position(config)
+		return _find_tactical_position(_get_config())
 
 func _find_defensive_position() -> Vector3:
 	# Find enemy units near our base
