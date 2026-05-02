@@ -43,6 +43,8 @@ var _ai_configs: Dictionary = {
 }
 
 # Timers
+@export var unit_spawn_interval: float = 4.0
+@export var tower_build_interval: float = 12.0
 var _spawn_timer: float = 0.0
 var _tower_timer: float = 0.0
 
@@ -105,7 +107,7 @@ func _process(delta: float) -> void:
 	_tower_timer += delta
 	
 	# Try to spawn units
-	if _spawn_timer >= config["spawn_interval"]:
+	if _spawn_timer >= unit_spawn_interval:
 		_spawn_timer = 0.0
 		_try_spawn_unit(config)
 	
@@ -115,7 +117,7 @@ func _process(delta: float) -> void:
 		_tower_timer += delta * 1.5  # Build faster when under attack
 		build_priority = min(0.9, build_priority + 0.2)
 	
-	if _tower_timer >= config["build_interval"]:
+	if _tower_timer >= tower_build_interval:
 		_tower_timer = 0.0
 		if randf() < build_priority:
 			_try_build_tower(config)

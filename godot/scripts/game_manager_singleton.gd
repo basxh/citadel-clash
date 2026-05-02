@@ -17,10 +17,10 @@ const TEAM_COLORS: Dictionary = {
 	TEAM_NEUTRAL: Color(0.5, 0.5, 0.5)    # Gray
 }
 
-const COST_UNIT_BASIC: int = 10
-const COST_UNIT_FAST: int = 15
-const COST_UNIT_TANK: int = 25
-const COST_TOWER: int = 50
+const COST_UNIT_BASIC: int = 15
+const COST_UNIT_FAST: int = 20
+const COST_UNIT_TANK: int = 40
+const COST_TOWER: int = 60
 
 func _ready() -> void:
 	pass

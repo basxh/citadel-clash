@@ -16,14 +16,19 @@ const TEAM_COLORS: Dictionary = {
 
 # Game state
 enum GameState { PLAYING, PAUSED, VICTORY, DEFEAT }
+enum GameMode { SKIRMISH, CAMPAIGN, MULTIPLAYER }
 
 # Signals
 signal gold_changed(team: int, amount: int)
 signal game_state_changed(state: GameState)
+signal state_changed(new_state: GameState, old_state: GameState)
 signal base_destroyed(team: int)
 signal unit_spawned(unit: Unit)
 signal unit_died(unit: Unit)
 signal difficulty_changed(team: int, difficulty: String)
+
+# Game mode
+var current_game_mode: GameMode = GameMode.SKIRMISH
 
 # Game data
 var _team_gold: Dictionary = {}
@@ -121,9 +126,22 @@ func _on_base_destroyed(team: int) -> void:
 		_set_game_over(GameState.VICTORY)
 
 func _set_game_over(state: GameState) -> void:
+	var old_state = _game_state
 	_game_state = state
 	game_state_changed.emit(state)
+	state_changed.emit(state, old_state)
 	print("Game Over! State: " + str(state))
+
+func start_game(mode: GameMode) -> void:
+	current_game_mode = mode
+	get_tree().change_scene_to_file("res://scenes/main_game.tscn")
+
+func resume_game() -> void:
+	if _game_state == GameState.PAUSED:
+		var old_state = _game_state
+		_game_state = GameState.PLAYING
+		state_changed.emit(_game_state, old_state)
+		game_state_changed.emit(_game_state)
 
 func reset_game() -> void:
 	_game_state = GameState.PLAYING
