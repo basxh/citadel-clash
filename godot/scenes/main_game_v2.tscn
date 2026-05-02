@@ -1,0 +1,800 @@
+[gd_scene load_steps=35 format=3 uid="uid://main_game_v2_001"]
+
+[ext_resource type="Script" path="res://scripts/game_scene.gd" id="1_scene"]
+[ext_resource type="PackedScene" uid="uid://base_entity_001" path="res://entities/base.tscn" id="2_base"]
+[ext_resource type="Script" path="res://scripts/grid_system.gd" id="3_grid"]
+[ext_resource type="Script" path="res://scripts/path_system.gd" id="4_path"]
+[ext_resource type="Script" path="res://scripts/ai_controller.gd" id="5_ai"]
+[ext_resource type="Script" path="res://scripts/game_ui.gd" id="6_ui"]
+
+[sub_resource type="ProceduralSkyMaterial" id="ProceduralSkyMaterial_v2"]
+sky_horizon_color = Color(0.6, 0.7, 0.9, 1)
+sky_energy_multiplier = 0.6
+ground_horizon_color = Color(0.4, 0.4, 0.4, 1)
+
+[sub_resource type="Sky" id="Sky_v2"]
+sky_material = SubResource("ProceduralSkyMaterial_v2")
+
+[sub_resource type="Environment" id="Environment_v2"]
+background_mode = 2
+sky = SubResource("Sky_v2")
+ambient_light_source = 2
+ambient_light_color = Color(0.4, 0.4, 0.4, 1)
+
+# Spawn Arena Material (golden/bronze center)
+[sub_resource type="StandardMaterial3D" id="SpawnArenaMaterial"]
+albedo_color = Color(0.76, 0.6, 0.42, 1)
+roughness = 0.7
+metallic = 0.3
+
+# Spawn Point Material (glowing center)
+[sub_resource type="StandardMaterial3D" id="SpawnPointMaterial"]
+albedo_color = Color(1.0, 0.8, 0.3, 1)
+roughness = 0.5
+metallic = 0.5
+emission_enabled = true
+emission = Color(0.5, 0.4, 0.1, 1)
+emission_energy_multiplier = 0.3
+
+# Path Material (sand/dirt)
+[sub_resource type="StandardMaterial3D" id="PathMaterial"]
+albedo_color = Color(0.76, 0.58, 0.34, 1)
+roughness = 0.9
+
+# Buildable Zone Material (green)
+[sub_resource type="StandardMaterial3D" id="BuildableMaterial"]
+albedo_color = Color(0.3, 0.75, 0.3, 1)
+roughness = 0.8
+
+# Non-Buildable Grass Material
+[sub_resource type="StandardMaterial3D" id="GrassMaterial"]
+albedo_color = Color(0.25, 0.5, 0.25, 1)
+roughness = 0.9
+
+# Castle Stone Material
+[sub_resource type="StandardMaterial3D" id="CastleMaterial"]
+albedo_color = Color(0.5, 0.5, 0.55, 1)
+roughness = 0.7
+
+# Spawn Arena Cylinder (radius 8, height 0.2)
+[sub_resource type="CylinderMesh" id="SpawnArenaMesh"]
+top_radius = 8.0
+bottom_radius = 8.0
+height = 0.2
+
+# Spawn Point Marker (radius 2, height 0.3)
+[sub_resource type="CylinderMesh" id="SpawnPointMesh"]
+top_radius = 2.0
+bottom_radius = 2.0
+height = 0.3
+
+# Path Segment Mesh (width 6)
+[sub_resource type="BoxMesh" id="PathSegmentMesh"]
+size = Vector3(6, 0.15, 10)
+
+# Path Corner Mesh (for turns)
+[sub_resource type="CylinderMesh" id="PathCornerMesh"]
+top_radius = 4.0
+bottom_radius = 4.0
+height = 0.15
+
+# Build Zone Marker (raised platform)
+[sub_resource type="BoxMesh" id="BuildZoneMesh"]
+size = Vector3(5, 0.3, 5)
+
+# Hill/Raised Terrain
+[sub_resource type="CylinderMesh" id="HillMesh"]
+top_radius = 0.0
+bottom_radius = 15.0
+height = 3.0
+
+# Castle Tower Mesh
+[sub_resource type="CylinderMesh" id="CastleTowerMesh"]
+top_radius = 1.5
+bottom_radius = 2.0
+height = 6.0
+
+# Castle Main Keep Mesh
+[sub_resource type="BoxMesh" id="CastleKeepMesh"]
+size = Vector3(8, 6, 8)
+
+# Castle Wall Mesh
+[sub_resource type="BoxMesh" id="CastleWallMesh"]
+size = Vector3(2, 4, 10)
+
+# Castle Gate Mesh
+[sub_resource type="BoxMesh" id="CastleGateMesh"]
+size = Vector3(4, 4, 1)
+
+[sub_resource type="Theme" id="Theme_UI_v2"]
+default_font_size = 18
+
+# Collision shapes
+[sub_resource type="BoxShape3D" id="BuildZoneCollision"]
+size = Vector3(5, 1, 5)
+
+[sub_resource type="BoxShape3D" id="PathCollision"]
+size = Vector3(6, 1, 10)
+
+[node name="MainGameV2" type="Node3D"]
+script = ExtResource("1_scene")
+
+[node name="WorldEnvironment" type="WorldEnvironment" parent="."]
+environment = SubResource("Environment_v2")
+
+[node name="DirectionalLight3D" type="DirectionalLight3D" parent="."]
+transform = Transform3D(0.707107, -0.5, 0.5, 0, 0.707107, 0.707107, -0.707107, -0.5, 0.5, 0, 30, 0)
+light_energy = 1.2
+shadow_enabled = true
+shadow_bias = 0.01
+
+# ========== TERRAIN ==========
+[node name="Terrain" type="Node3D" parent="."]
+
+# Ground plane - non-buildable grass
+[node name="GroundPlane" type="MeshInstance3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, -0.5, 0)
+material_override = SubResource("GrassMaterial")
+
+[node name="CSGBox3D" type="CSGBox3D" parent="Terrain/GroundPlane"]
+size = Vector3(150, 1, 150)
+material = SubResource("GrassMaterial")
+
+# Decorative hills around the map
+[node name="Hill1" type="MeshInstance3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -40, 0, -40)
+material_override = SubResource("GrassMaterial")
+mesh = SubResource("HillMesh")
+
+[node name="Hill2" type="MeshInstance3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 40, 0, -40)
+material_override = SubResource("GrassMaterial")
+mesh = SubResource("HillMesh")
+
+[node name="Hill3" type="MeshInstance3D" parent="Terrain"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 50)
+material_override = SubResource("GrassMaterial")
+mesh = SubResource("HillMesh")
+
+# ========== CENTRAL SPAWN ARENA ==========
+[node name="SpawnArena" type="Node3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.1, 0)
+
+# Main arena platform
+[node name="ArenaPlatform" type="MeshInstance3D" parent="SpawnArena"]
+material_override = SubResource("SpawnArenaMaterial")
+mesh = SubResource("SpawnArenaMesh")
+
+[node name="ArenaCollision" type="StaticBody3D" parent="SpawnArena/ArenaPlatform"]
+[node name="CollisionShape3D" type="CollisionShape3D" parent="SpawnArena/ArenaPlatform/ArenaCollision"]
+shape = SubResource("PathCollision")
+
+# Spawn point (center)
+[node name="SpawnPoint" type="MeshInstance3D" parent="SpawnArena"]
+material_override = SubResource("SpawnPointMaterial")
+mesh = SubResource("SpawnPointMesh")
+
+# Spawn particle effect placeholder
+[node name="SpawnEffect" type="CPUParticles3D" parent="SpawnArena/SpawnPoint"]
+emitting = false
+amount = 50
+lifetime = 1.0
+one_shot = true
+explosiveness = 0.8
+emission_shape = 1
+emission_sphere_radius = 1.0
+direction = Vector3(0, 1, 0)
+spread = 45.0
+initial_velocity_min = 2.0
+initial_velocity_max = 5.0
+scale_amount_min = 0.1
+scale_amount_max = 0.3
+color = Color(1, 0.9, 0.3, 1)
+
+# ========== PATH SYSTEM ==========
+[node name="PathSystem" type="Node3D" parent="."]
+script = ExtResource("4_path")
+
+# Path 1: Center to North (Player 1 - Blue side)
+[node name="Path1" type="Node3D" parent="PathSystem"]
+
+# Straight segment from spawn
+[node name="Path1_Segment1" type="MeshInstance3D" parent="PathSystem/Path1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, -15)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+# 90-degree turn corner
+[node name="Path1_Corner" type="MeshInstance3D" parent="PathSystem/Path1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, -25)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathCornerMesh")
+
+# Straight to base
+[node name="Path1_Segment2" type="MeshInstance3D" parent="PathSystem/Path1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, -35)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+[node name="Path1_Segment3" type="MeshInstance3D" parent="PathSystem/Path1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.08, -45)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+# Path 2: Center to South-East (Player 2 - Red side)
+[node name="Path2" type="Node3D" parent="PathSystem"]
+
+[node name="Path2_Segment1" type="MeshInstance3D" parent="PathSystem/Path2"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 13, 0.08, 7.5)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+[node name="Path2_Corner" type="MeshInstance3D" parent="PathSystem/Path2"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 21.65, 0.08, 22.5)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathCornerMesh")
+
+[node name="Path2_Segment2" type="MeshInstance3D" parent="PathSystem/Path2"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 30.31, 0.08, 37.5)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+[node name="Path2_Segment3" type="MeshInstance3D" parent="PathSystem/Path2"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 38.97, 0.08, 52.5)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+# Path 3: Center to South-West (Player 3 - Green side)
+[node name="Path3" type="Node3D" parent="PathSystem"]
+
+[node name="Path3_Segment1" type="MeshInstance3D" parent="PathSystem/Path3"]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -13, 0.08, 7.5)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+[node name="Path3_Corner" type="MeshInstance3D" parent="PathSystem/Path3"]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -21.65, 0.08, 22.5)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathCornerMesh")
+
+[node name="Path3_Segment2" type="MeshInstance3D" parent="PathSystem/Path3"]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -30.31, 0.08, 37.5)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+[node name="Path3_Segment3" type="MeshInstance3D" parent="PathSystem/Path3"]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -38.97, 0.08, 52.5)
+material_override = SubResource("PathMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+# ========== GRID SYSTEM / BUILD ZONES ==========
+[node name="GridSystem" type="Node3D" parent="."]
+script = ExtResource("3_grid")
+grid_size = Vector2(3, 3)
+cell_size = 5.0
+
+# Build zones along Path 1 (North)
+[node name="BuildZones_Path1" type="Node3D" parent="GridSystem"]
+
+[node name="BuildZone_1_1" type="MeshInstance3D" parent="GridSystem/BuildZones_Path1" groups=["build_zones"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.15, -25)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_1_2" type="MeshInstance3D" parent="GridSystem/BuildZones_Path1" groups=["build_zones"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.15, -35)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_1_3" type="MeshInstance3D" parent="GridSystem/BuildZones_Path1" groups=["build_zones"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.15, -25)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_1_4" type="MeshInstance3D" parent="GridSystem/BuildZones_Path1" groups=["build_zones"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.15, -35)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_1_5" type="MeshInstance3D" parent="GridSystem/BuildZones_Path1" groups=["build_zones"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -6, 0.15, -45)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_1_6" type="MeshInstance3D" parent="GridSystem/BuildZones_Path1" groups=["build_zones"]]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 6, 0.15, -45)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+# Build zones along Path 2 (South-East)
+[node name="BuildZones_Path2" type="Node3D" parent="GridSystem"]
+
+[node name="BuildZone_2_1" type="MeshInstance3D" parent="GridSystem/BuildZones_Path2" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 5.2, 0.15, 22.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_2_2" type="MeshInstance3D" parent="GridSystem/BuildZones_Path2" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 13.86, 0.15, 37.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_2_3" type="MeshInstance3D" parent="GridSystem/BuildZones_Path2" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 22.52, 0.15, 22.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_2_4" type="MeshInstance3D" parent="GridSystem/BuildZones_Path2" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 30.18, 0.15, 37.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_2_5" type="MeshInstance3D" parent="GridSystem/BuildZones_Path2" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 22.52, 0.15, 52.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_2_6" type="MeshInstance3D" parent="GridSystem/BuildZones_Path2" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 37.84, 0.15, 52.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+# Build zones along Path 3 (South-West)
+[node name="BuildZones_Path3" type="Node3D" parent="GridSystem"]
+
+[node name="BuildZone_3_1" type="MeshInstance3D" parent="GridSystem/BuildZones_Path3" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -5.2, 0.15, 22.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_3_2" type="MeshInstance3D" parent="GridSystem/BuildZones_Path3" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -13.86, 0.15, 37.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_3_3" type="MeshInstance3D" parent="GridSystem/BuildZones_Path3" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -22.52, 0.15, 22.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_3_4" type="MeshInstance3D" parent="GridSystem/BuildZones_Path3" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -30.18, 0.15, 37.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_3_5" type="MeshInstance3D" parent="GridSystem/BuildZones_Path3" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -22.52, 0.15, 52.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+[node name="BuildZone_3_6" type="MeshInstance3D" parent="GridSystem/BuildZones_Path3" groups=["build_zones"]]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -37.84, 0.15, 52.5)
+material_override = SubResource("BuildableMaterial")
+mesh = SubResource("BuildZoneMesh")
+
+# ========== CASTLES / BASES ==========
+[node name="Castles" type="Node3D" parent="."]
+
+# Castle 1 - North (Blue Team)
+[node name="Castle1" type="Node3D" parent="Castles"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, -60)
+
+[node name="MainKeep" type="MeshInstance3D" parent="Castles/Castle1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleKeepMesh")
+
+[node name="Tower1" type="MeshInstance3D" parent="Castles/Castle1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, -4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower2" type="MeshInstance3D" parent="Castles/Castle1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, -4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower3" type="MeshInstance3D" parent="Castles/Castle1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, 4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower4" type="MeshInstance3D" parent="Castles/Castle1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, 4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Gate" type="MeshInstance3D" parent="Castles/Castle1"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 5)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleGateMesh")
+
+# Castle Platform
+[node name="Platform" type="MeshInstance3D" parent="Castles/Castle1"]
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+# Castle 2 - South-East (Red Team)
+[node name="Castle2" type="Node3D" parent="Castles"]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 51.96, 0, 30)
+
+[node name="MainKeep" type="MeshInstance3D" parent="Castles/Castle2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleKeepMesh")
+
+[node name="Tower1" type="MeshInstance3D" parent="Castles/Castle2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, -4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower2" type="MeshInstance3D" parent="Castles/Castle2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, -4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower3" type="MeshInstance3D" parent="Castles/Castle2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, 4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower4" type="MeshInstance3D" parent="Castles/Castle2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, 4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Gate" type="MeshInstance3D" parent="Castles/Castle2"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 5)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleGateMesh")
+
+[node name="Platform" type="MeshInstance3D" parent="Castles/Castle2"]
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+# Castle 3 - South-West (Green Team)
+[node name="Castle3" type="Node3D" parent="Castles"]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -51.96, 0, 30)
+
+[node name="MainKeep" type="MeshInstance3D" parent="Castles/Castle3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, 0)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleKeepMesh")
+
+[node name="Tower1" type="MeshInstance3D" parent="Castles/Castle3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, -4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower2" type="MeshInstance3D" parent="Castles/Castle3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, -4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower3" type="MeshInstance3D" parent="Castles/Castle3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -4, 3, 4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Tower4" type="MeshInstance3D" parent="Castles/Castle3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 4, 3, 4)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleTowerMesh")
+
+[node name="Gate" type="MeshInstance3D" parent="Castles/Castle3"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2, 5)
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("CastleGateMesh")
+
+[node name="Platform" type="MeshInstance3D" parent="Castles/Castle3"]
+material_override = SubResource("CastleMaterial")
+mesh = SubResource("PathSegmentMesh")
+
+# ========== GAME ENTITIES ==========
+[node name="PlayerBase" parent="." instance=ExtResource("2_base")]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3, -60)
+team_id = 0
+max_health = 500.0
+
+[node name="EnemyBase1" parent="." instance=ExtResource("2_base")]
+transform = Transform3D(0.866025, 0, 0.5, 0, 1, 0, -0.5, 0, 0.866025, 51.96, 3, 30)
+team_id = 1
+max_health = 500.0
+
+[node name="EnemyBase2" parent="." instance=ExtResource("2_base")]
+transform = Transform3D(0.866025, 0, -0.5, 0, 1, 0, 0.5, 0, 0.866025, -51.96, 3, 30)
+team_id = 2
+max_health = 500.0
+
+[node name="Units" type="Node3D" parent="."]
+
+[node name="Towers" type="Node3D" parent="."]
+
+[node name="AIControllers" type="Node" parent="."]
+
+[node name="AI1" type="Node" parent="AIControllers"]
+script = ExtResource("5_ai")
+team_id = 1
+unit_spawn_interval = 6.0
+tower_build_interval = 20.0
+
+[node name="AI2" type="Node" parent="AIControllers"]
+script = ExtResource("5_ai")
+team_id = 2
+unit_spawn_interval = 7.0
+tower_build_interval = 25.0
+
+# ========== CAMERA ==========
+[node name="Camera3D" type="Camera3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, 1, 0, -1, -4.37114e-08, 0, 80, 0)
+projection = 1
+size = 80
+near = 0.1
+far = 1000.0
+
+# ========== UI ==========
+[node name="CanvasLayer" type="CanvasLayer" parent="."]
+
+[node name="GameUI" type="Control" parent="CanvasLayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 1
+theme = SubResource("Theme_UI_v2")
+script = ExtResource("6_ui")
+
+[node name="TopBar" type="Panel" parent="CanvasLayer/GameUI"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 60.0
+grow_horizontal = 2
+
+[node name="GoldLabel" type="Label" parent="CanvasLayer/GameUI/TopBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 20.0
+offset_top = -20.0
+offset_right = 200.0
+offset_bottom = 20.0
+grow_vertical = 2
+theme_override_font_sizes/font_size = 24
+text = "Gold: 100"
+
+[node name="GameTimer" type="Label" parent="CanvasLayer/GameUI/TopBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -50.0
+offset_top = -20.0
+offset_right = 50.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 28
+text = "00:00"
+horizontal_alignment = 1
+
+[node name="HPBar" type="ProgressBar" parent="CanvasLayer/GameUI/TopBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -300.0
+offset_top = -15.0
+offset_right = -20.0
+offset_bottom = 15.0
+grow_horizontal = 0
+grow_vertical = 2
+max_value = 500.0
+value = 500.0
+
+[node name="Label" type="Label" parent="CanvasLayer/GameUI/TopBar/HPBar"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Base HP: 500/500"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="DifficultyButton" type="Button" parent="CanvasLayer/GameUI/TopBar"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -60.0
+offset_top = -20.0
+offset_right = 60.0
+offset_bottom = 20.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Difficulty"
+
+[node name="BottomBar" type="Panel" parent="CanvasLayer/GameUI"]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -80.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="UnitButtons" type="HBoxContainer" parent="CanvasLayer/GameUI/BottomBar"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 4
+anchor_top = 0.5
+anchor_bottom = 0.5
+offset_left = 20.0
+offset_top = -30.0
+offset_right = 500.0
+offset_bottom = 30.0
+grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="BasicUnitButton" type="Button" parent="CanvasLayer/GameUI/BottomBar/UnitButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 60)
+layout_mode = 2
+text = "Basic
+15 Gold"
+
+[node name="FastUnitButton" type="Button" parent="CanvasLayer/GameUI/BottomBar/UnitButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 60)
+layout_mode = 2
+text = "Fast
+20 Gold"
+
+[node name="TankUnitButton" type="Button" parent="CanvasLayer/GameUI/BottomBar/UnitButtons"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(120, 60)
+layout_mode = 2
+text = "Tank
+40 Gold"
+
+[node name="BuildTowerButton" type="Button" parent="CanvasLayer/GameUI/BottomBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 60)
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -170.0
+offset_top = -30.0
+offset_right = -20.0
+offset_bottom = 30.0
+grow_horizontal = 0
+grow_vertical = 2
+text = "Build Tower\n60 Gold"
+
+[node name="CancelButton" type="Button" parent="CanvasLayer/GameUI/BottomBar"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(150, 60)
+layout_mode = 1
+anchors_preset = 6
+anchor_left = 1.0
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_left = -170.0
+offset_top = -30.0
+offset_right = -20.0
+offset_bottom = 30.0
+grow_horizontal = 0
+grow_vertical = 2
+text = "Cancel"
+visible = false
+
+[node name="GameOverPanel" type="Panel" parent="CanvasLayer/GameUI"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -250.0
+offset_top = -150.0
+offset_right = 250.0
+offset_bottom = 150.0
+grow_horizontal = 2
+grow_vertical = 2
+visible = false
+
+[node name="GameOverTitle" type="Label" parent="CanvasLayer/GameUI/GameOverPanel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_top = 40.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 48
+text = "VICTORY!"
+horizontal_alignment = 1
+
+[node name="RestartButton" type="Button" parent="CanvasLayer/GameUI/GameOverPanel"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 60)
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = 20.0
+offset_right = 100.0
+offset_bottom = 80.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_font_sizes/font_size = 28
+text = "Restart"
+
+[node name="MessageLabel" type="Label" parent="CanvasLayer/GameUI"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -200.0
+offset_top = 80.0
+offset_right = 200.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_font_sizes/font_size = 24
+text = ""
+horizontal_alignment = 1
+visible = false
+
+[node name="EntityInfoPanel" type="Panel" parent="CanvasLayer/GameUI"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -180.0
+offset_top = 70.0
+offset_right = -10.0
+offset_bottom = 200.0
+grow_horizontal = 0
+visible = false
+
+[node name="EntityInfoLabel" type="Label" parent="CanvasLayer/GameUI/EntityInfoPanel"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 10.0
+offset_top = 10.0
+offset_right = -10.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Info"
+
+[node name="DifficultyMenu" type="PopupMenu" parent="CanvasLayer/GameUI"]
+unique_name_in_owner = true

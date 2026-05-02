@@ -188,10 +188,10 @@ func highlight(is_highlighted: bool) -> void:
 	else:
 		_hide_range_indicator()
 
-func set_selected(selected: bool) -> void:
+func set_selected(is_selected: bool) -> void:
 	if _selection_ring:
-		_selection_ring.visible = selected
-		if selected:
+		_selection_ring.visible = is_selected
+		if is_selected:
 			selected.emit(self)
 		else:
 			deselected.emit()
