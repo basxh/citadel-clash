@@ -13,11 +13,18 @@ signal unit_despawned(unit: Node3D)
 @export var waypoint_reach_threshold: float = 1.5  # Distance to consider waypoint reached
 @export var rotation_speed: float = 10.0  # How fast unit rotates towards target
 
+# Debug visualization
+@export var show_debug_info: bool = true
+var _debug_label: Label3D = null
+
 # Path data
 var _path_id: int = -1
 var _waypoints: Array[Vector3] = []
 var _current_waypoint_index: int = 0
 var _path_system: PathSystem = null
+
+# NEW: Target tracking
+var _target_team: int = -1  # Which team/base this unit is attacking
 
 # Unit reference
 var _unit: Unit = null
@@ -29,6 +36,14 @@ var _base_to_attack: Base = null
 
 func _ready():
 	call_deferred("_find_path_system")
+	
+	# Debug timer
+	if show_debug_info:
+		var timer = Timer.new()
+		timer.wait_time = 0.5
+		timer.autostart = true
+		timer.timeout.connect(_update_debug_info)
+		add_child(timer)
 
 func _find_path_system():
 	var root = get_tree().current_scene
@@ -40,9 +55,13 @@ func _find_path_system():
 			push_warning("UnitPathing: PathSystem not found!")
 
 ## Initialize pathing for a unit
-func initialize(unit: Unit, path_id: int) -> void:
+## spawn_position: Where the unit spawns (should be center arena)
+## path_id: Which path to follow (0, 1, or 2 - matches target base team)
+## target_team: Which base to attack (0, 1, or 2)
+func initialize(unit: Unit, path_id: int, target_team: int = -1) -> void:
 	_unit = unit
 	_path_id = path_id
+	_target_team = target_team if target_team >= 0 else path_id
 	
 	if not _path_system:
 		_find_path_system()
@@ -54,10 +73,14 @@ func initialize(unit: Unit, path_id: int) -> void:
 			_current_waypoint_index = 0
 			_has_reached_base = false
 			
-			# Set initial position to spawn
-			unit.global_position = _waypoints[0]
+			# IMPORTANT: Unit spawns in CENTER, not at first waypoint
+			# First waypoint is the start of the path TO the target
+			# Unit should move from center TO first waypoint
 			
-			print("UnitPathing: Initialized for team ", unit.team_id, " on path ", path_id, " with ", _waypoints.size(), " waypoints")
+			print("UnitPathing: Initialized - Path: ", path_id, 
+				" Target: ", _target_team, 
+				" Waypoints: ", _waypoints.size(),
+				" Spawn at center, move to waypoint 0: ", _waypoints[0])
 		else:
 			push_warning("UnitPathing: No waypoints found for path " + str(path_id))
 	else:
@@ -127,6 +150,9 @@ func _move_towards_waypoint(target: Vector3, delta: float) -> void:
 		# Fallback for non-CharacterBody3D
 		_unit.global_position += direction * _unit.move_speed * delta
 		_unit.global_position.y = current_pos.y  # Maintain height
+	
+	# DEBUG: Update debug display
+	_update_debug_info()
 
 func _calculate_flat_distance(a: Vector3, b: Vector3) -> float:
 	var diff = b - a
@@ -156,11 +182,13 @@ func _find_target_base() -> Base:
 	"""Find the base at the end of this path"""
 	var bases = _unit.get_tree().get_nodes_in_group("bases")
 	
+	# Use stored target team, or fall back to path_id
+	var team_to_attack = _target_team if _target_team >= 0 else _path_id
+	
 	for base in bases:
 		if base is Base:
-			# Check if this base matches the path's target team
-			# Path 0 leads to base team 0, Path 1 to team 1, etc.
-			if base.team_id == _path_id:
+			# Path N leads to base team N
+			if base.team_id == team_to_attack:
 				return base
 	
 	return null
@@ -244,6 +272,25 @@ func _create_despawn_effect() -> void:
 ## Stop pathing
 func stop_pathing() -> void:
 	_is_following_path = false
+
+## Debug info display
+func _update_debug_info() -> void:
+	if not show_debug_info or not _unit:
+		return
+	
+	# Create/update 3D label
+	if not _debug_label:
+		_debug_label = Label3D.new()
+		_debug_label.billboard = BaseMaterial3D.BILLBOARD_ENABLED
+		_debug_label.no_depth_test = true
+		_debug_label.font_size = 64
+		_debug_label.position.y = 1.5
+		_unit.add_child(_debug_label)
+	
+	# Update text
+	var target_str = str(_target_team) if _target_team >= 0 else "?"
+	var waypoint_str = str(_current_waypoint_index) + "/" + str(_waypoints.size() - 1)
+	_debug_label.text = "S:" + str(_unit.sender_team) + " T:" + target_str + "\nWP:" + waypoint_str
 
 ## Get progress info
 func get_progress() -> Dictionary:

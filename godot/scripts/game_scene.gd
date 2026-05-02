@@ -30,6 +30,10 @@ var _selected_entity: Node3D = null
 # Tower placement system
 var _tower_placement: TowerPlacementSystem = null
 
+# Spawn Test Mode
+var _spawn_test_running: bool = false
+var _spawn_test_count: int = 0
+
 func _ready() -> void:
 	_camera_target_position = _camera.global_position
 	
@@ -51,7 +55,16 @@ func _ready() -> void:
 		ai.ai_spawn_unit_requested.connect(_on_ai_spawn_unit)
 		ai.ai_build_tower_requested.connect(_on_ai_build_tower)
 	
+	# DEBUG: Add spawn test button (press T to run)
 	print("Game scene initialized with TowerPlacementSystem")
+	print("DEBUG: Press 'T' to run spawn test")
+
+func _input(event: InputEvent) -> void:
+	# DEBUG: Test spawn system with 'T' key
+	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_T:
+			run_spawn_test()
+			return
 
 func _on_tower_placed(tower: Tower, zone: GridSystem.BuildZone) -> void:
 	"""Handle successful tower placement"""
@@ -98,12 +111,16 @@ func _on_buy_unit(unit_type: String) -> void:
 	_on_buy_unit_with_target(unit_type, 1)
 
 func _on_buy_unit_with_target(unit_type: String, target_team: int) -> void:
-	# Spawn unit at player base targeting specific enemy
-	var player_base = GameManager.get_player_base()
-	if player_base:
-		var path_id = UnitPathing.get_path_for_target(target_team)
-		_spawn_unit(unit_type, 0, player_base.global_position + Vector3(randf() - 0.5, 0, randf() - 0.5) * 3, path_id, target_team)
-		print("GameScene: Player spawned ", unit_type, " targeting Team ", target_team, " on Path ", path_id)
+	# Spawn unit at CENTER targeting specific enemy
+	# All units spawn in center arena
+	var spawn_pos = Vector3.ZERO  # Center of map
+	
+	# Get path for target
+	var path_id = UnitPathing.get_path_for_target(target_team)
+	
+	# Spawn with proper initialization
+	_spawn_unit_with_init(unit_type, 0, spawn_pos, path_id, target_team)
+	print("GameScene: Player (Team 0) spawned ", unit_type, " targeting Team ", target_team, " on Path ", path_id)
 
 func _on_difficulty_selected(team: int, difficulty: String) -> void:
 	GameManager.set_enemy_difficulty(team, difficulty)
@@ -137,6 +154,28 @@ func _build_tower(pos: Vector3, team: int) -> void:
 	
 	_towers_container.add_child(tower)
 
+func _spawn_unit_with_init(unit_type: String, team: int, spawn_pos: Vector3, path_id: int, target_team: int) -> void:
+	"""Spawn unit with proper initialization - units spawn in center"""
+	var unit = _unit_template.instantiate() as Unit
+	unit.global_position = spawn_pos  # Center position
+	unit.set_stats_from_type(unit_type)
+	
+	# Initialize with sender and target info
+	unit.initialize(team, target_team)
+	
+	unit.add_to_group("units")
+	
+	# Connect selection signals
+	unit.selected.connect(_on_entity_selected)
+	unit.deselected.connect(_on_entity_deselected)
+	
+	_units_container.add_child(unit)
+	
+	print("GameScene: Unit spawned at ", spawn_pos, " | Sender: ", team, " | Target: ", target_team, " | Path: ", path_id)
+	
+	if GameManager:
+		GameManager.unit_spawned.emit(unit)
+
 func _spawn_unit(unit_type: String, team: int, spawn_pos: Vector3, path_id: int = -1, target_team: int = -1) -> void:
 	var unit = _unit_template.instantiate() as Unit
 	unit.global_position = spawn_pos
@@ -166,7 +205,10 @@ func _on_ai_spawn_unit(spawn_data: Dictionary) -> void:
 	var pos = spawn_data["position"]
 	var path_id = spawn_data.get("path_id", -1)
 	var target_team = spawn_data.get("target_team", -1)
-	_spawn_unit(unit_type, team, pos, path_id, target_team)
+	var sender_team = spawn_data.get("sender_team", team)
+	
+	# Use new initialization system
+	_spawn_unit_with_init(unit_type, sender_team, pos, path_id, target_team)
 
 func _on_ai_build_tower(pos: Vector3, team: int) -> void:
 	_build_tower(pos, team)
@@ -255,6 +297,102 @@ func _deselect_entity() -> void:
 			_selected_entity.set_selected(false)
 	_selected_entity = null
 	_ui.hide_entity_info()
+
+# =============================================================================
+# SPAWN TEST SYSTEM - Debug/Testing
+# =============================================================================
+
+func run_spawn_test() -> void:
+	"""Run comprehensive spawn test - spawns 10 units per team to all targets"""
+	if _spawn_test_running:
+		print("Spawn test already running!")
+		return
+	
+	_spawn_test_running = true
+	_spawn_test_count = 0
+	
+	print("")
+	print("=" * 60)
+	print("SPAWN TEST STARTING")
+	print("=" * 60)
+	print("Spawning 10 units per team targeting each other team")
+	print("Expected: 60 units total, all spawning at center (0, 0, 0)")
+	print("")
+	
+	# Get AI controllers
+	var ai_controllers = $AIControllers.get_children()
+	var ai_1 = ai_controllers[0] if ai_controllers.size() > 0 else null
+	var ai_2 = ai_controllers[1] if ai_controllers.size() > 1 else null
+	
+	# Spawn 10 batches
+	for i in range(10):
+		print("\n--- Spawn Batch ", i + 1, " ---")
+		
+		# Player (Team 0) sends units
+		_spawn_unit_with_init("basic", 0, Vector3.ZERO, 1, 1)  # To Team 1
+		_spawn_unit_with_init("fast", 0, Vector3.ZERO, 2, 2)   # To Team 2
+		print("Player: spawned basic (to Team 1), fast (to Team 2)")
+		
+		# AI 1 (Team 1) sends units if available
+		if ai_1:
+			ai_1._spawn_unit_to_target("basic", 0)  # To Player
+			ai_1._spawn_unit_to_target("tank", 2)   # To Team 2
+			print("AI 1: spawned basic (to Player), tank (to Team 2)")
+		
+		# AI 2 (Team 2) sends units if available
+		if ai_2:
+			ai_2._spawn_unit_to_target("basic", 0)  # To Player
+			ai_2._spawn_unit_to_target("fast", 1)    # To Team 1
+			print("AI 2: spawned basic (to Player), fast (to Team 1)")
+		
+		_spawn_test_count += 6
+		
+		# Small delay between batches
+		await get_tree().create_timer(0.3).timeout
+	
+	print("")
+	print("=" * 60)
+	print("SPAWN TEST COMPLETE")
+	print("Total units spawned: ", _spawn_test_count)
+	print("All units should have spawned at center (0, 0, 0)")
+	print("Check console logs above for verification")
+	print("=" * 60)
+	print("")
+	
+	# Schedule verification
+	await get_tree().create_timer(2.0).timeout
+	_verify_spawn_test()
+	
+	_spawn_test_running = false
+
+func _verify_spawn_test() -> void:
+	"""Verify spawn test results"""
+	var units = get_tree().get_nodes_in_group("units")
+	
+	print("")
+	print("SPAWN TEST VERIFICATION")
+	print("-" * 40)
+	print("Total units in game: ", units.size())
+	
+	var spawn_issues = 0
+	for unit in units:
+		if unit is Unit:
+			var distance_from_center = unit.global_position.distance_to(Vector3.ZERO)
+			if distance_from_center > 10:  # Should spawn near center
+				print("WARNING: Unit far from center! Distance: ", distance_from_center)
+				spawn_issues += 1
+			
+			print("Unit - Sender: ", unit.sender_team, 
+				" Target: ", unit.target_team, 
+				" Path: ", unit.path_index,
+				" Pos: ", unit.global_position)
+	
+	if spawn_issues == 0:
+		print("✓ All units spawned correctly at center!")
+	else:
+		print("✗ Found ", spawn_issues, " units with spawn issues")
+	
+	print("-" * 40)
 
 func _on_entity_selected(entity: Node3D) -> void:
 	if _selected_entity != entity:

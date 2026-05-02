@@ -152,30 +152,27 @@ func _select_target_team() -> int:
 	return enemy_bases[0].team_id
 
 func _spawn_unit_to_target(unit_type: String, target_team: int) -> void:
-	"""Spawn a unit targeting a specific enemy team"""
+	"""Spawn a unit targeting a specific enemy team - ALL units spawn in center"""
 	# Get the path for the target team
 	var path_id = UnitPathing.get_path_for_target(target_team)
 	
-	# Spawn at the center spawn arena (Path 0 start - all units spawn in center)
+	# ALL units spawn at CENTER arena - this is the key fix!
 	var spawn_pos = Vector3.ZERO
 	
-	# If we have a path system, get the proper spawn position
-	var path_system = get_tree().current_scene.get_node_or_null("PathSystem")
-	if path_system:
-		# All teams spawn at center (Path 0 start)
-		spawn_pos = path_system.get_start_position(0)
-	
 	# Add small random offset for visual variety
-	var spawn_offset = Vector3(randf() - 0.5, 0, randf() - 0.5) * 2
+	var spawn_offset = Vector3(randf() - 0.5, 0, randf() - 0.5) * 3
+	var final_pos = spawn_pos + spawn_offset
 	
 	var spawn_data = {
 		"type": unit_type,
 		"team": team_id,
 		"target_team": target_team,
 		"path_id": path_id,
-		"position": spawn_pos + spawn_offset
+		"position": final_pos,
+		"sender_team": team_id  # NEW: Track who spawned
 	}
 	
+	print("AI Team ", team_id, " spawning ", unit_type, " at CENTER targeting Team ", target_team, " (Path ", path_id, ")")
 	ai_spawn_unit_requested.emit(spawn_data)
 
 func _select_unit_type(weights: Dictionary) -> String:

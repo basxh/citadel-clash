@@ -4,6 +4,11 @@ class_name Unit
 # Team
 @export var team_id: int = 0  # 0 = Player, 1 = Enemy1, 2 = Enemy2
 
+# Spawn and Target Info - NEW: Proper tracking for multi-team system
+var sender_team: int = -1  # Who spawned this unit (0, 1, or 2)
+var target_team: int = -1  # Which base to attack (0, 1, or 2)
+var path_index: int = -1   # Which path this unit follows (matches target_team)
+
 # Stats - Balanced for 5-10 minute matches
 @export var unit_type: String = "basic"
 @export var max_health: float = 100.0
@@ -50,19 +55,29 @@ func _ready() -> void:
 	
 	print("Unit spawned - Team: " + str(team_id) + ", Type: " + unit_type)
 
+func initialize(spawn_team: int, target: int) -> void:
+	"""Initialize the unit with spawn and target info"""
+	sender_team = spawn_team
+	target_team = target
+	team_id = spawn_team  # Keep compatibility with existing code
+	path_index = target  # Path matches target team
+	
+	print("Unit initialized - Sender: ", sender_team, ", Target: ", target_team, ", Path: ", path_index)
+
 func _initialize_pathing() -> void:
 	"""Initialize the pathing component"""
 	_pathing = UnitPathing.new()
 	add_child(_pathing)
 	
-	# Auto-detect path if not set
+	# Determine path: if target_team is set, use it; otherwise fall back to team_id
+	var effective_path = path_index if path_index >= 0 else UnitPathing.get_path_for_team(team_id)
 	if path_id < 0:
-		path_id = UnitPathing.get_path_for_team(team_id)
+		path_id = effective_path
 	
 	# Initialize with path
-	_pathing.initialize(self, path_id)
+	_pathing.initialize(self, path_id, target_team)
 	
-	print("Unit initialized - Team: ", team_id, ", Path: ", path_id)
+	print("Unit pathing initialized - Team: ", team_id, ", Path: ", path_id, ", Target Team: ", target_team)
 
 func _update_color() -> void:
 	if _mesh:
