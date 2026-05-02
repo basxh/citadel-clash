@@ -202,7 +202,7 @@ func get_tower_info() -> Dictionary:
 		"range": range,
 		"damage": damage,
 		"fire_rate": fire_rate,
-		"team": team_id
+		"team_id": team_id
 	}
 
 func is_in_range_of(position: Vector3) -> bool:

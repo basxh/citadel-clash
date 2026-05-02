@@ -233,5 +233,5 @@ func get_unit_info() -> Dictionary:
 		"max_health": max_health,
 		"damage": attack_damage,
 		"speed": move_speed,
-		"team": team_id
+		"team_id": team_id
 	}

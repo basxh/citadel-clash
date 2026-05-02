@@ -54,7 +54,7 @@ func _process(delta: float) -> void:
 func _input(event: InputEvent) -> void:
 	# Handle build placement and cancellation
 	if _build_mode:
-		if event.is_action_pressed("select"):
+		if event.is_action_pressed("unit_select"):
 			_try_build_tower()
 		elif event.is_action_pressed("cancel_build"):
 			_cancel_build_mode()
