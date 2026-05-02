@@ -1,0 +1,6 @@
+[FIX] Behebe GDScript Syntaxfehler in game_manager_singleton.gd
+
+- Signale am Dateiende waren nicht korrekt deklariert
+- Hinzugefügt: 'signal' Keyword vor gold_changed, unit_spawned, unit_died,
+  game_state_changed und base_destroyed
+- Alle anderen .gd Dateien sind syntaktisch korrekt

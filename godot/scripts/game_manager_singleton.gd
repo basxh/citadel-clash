@@ -77,8 +77,8 @@ func get_remaining_enemy_teams() -> Array[int]:
 	return []
 
 # Signals
-gold_changed
-unit_spawned
-unit_died
-game_state_changed
-base_destroyed
+signal gold_changed(team: int, amount: int)
+signal unit_spawned(unit: Unit)
+signal unit_died(unit: Unit)
+signal game_state_changed(state)
+signal base_destroyed(team: int)
