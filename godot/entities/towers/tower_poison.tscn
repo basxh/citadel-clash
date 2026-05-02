@@ -1,0 +1,101 @@
+[gd_scene load_steps=11 format=3 uid="uid://tower_poison"]
+
+[ext_resource type="Script" path="res://entities/towers/tower_poison.gd" id="1_poison"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+height = 0.4
+radius = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_body"]
+height = 2.0
+radius = 0.6
+
+[sub_resource type="CapsuleMesh" id="CapsuleMesh_spout"]
+height = 0.6
+radius = 0.15
+
+[sub_resource type="StandardMaterial3D" id="SpoutMaterial"]
+albedo_color = Color(0.4, 0.9, 0.3, 1)
+emission = Color(0.3, 0.8, 0.2, 1)
+emission_energy = 0.5
+
+[sub_resource type="CylinderMesh" id="CylinderShape"]
+height = 2.5
+radius = 1.0
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_range"]
+top_radius = 16.0
+bottom_radius = 16.0
+height = 0.05
+
+[sub_resource type="StandardMaterial3D" id="RangeMaterial"]
+albedo_color = Color(0.4, 0.9, 0.3, 0.3)
+transparency = 1
+
+[sub_resource type="TorusMesh" id="TorusMesh_selection"]
+inner_radius = 1.1
+outer_radius = 1.2
+
+[sub_resource type="ParticleProcessMaterial" id="PoisonMist"]
+emission_shape = 1
+emission_sphere_radius = 0.2
+direction = Vector3(0, 1, 0)
+gravity = Vector3(0, -0.5, 0)
+initial_velocity_min = 0.2
+initial_velocity_max = 0.5
+color = Color(0.4, 0.9, 0.3, 0.6)
+
+[node name="PoisonTower" type="StaticBody3D"]
+collision_layer = 2
+collision_mask = 15
+script = ExtResource("1_poison")
+
+[node name="Meshes" type="Node3D" parent="."]
+
+[node name="Base" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+mesh = SubResource("CylinderMesh_base")
+
+[node name="Body" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.4, 0)
+mesh = SubResource("CylinderMesh_body")
+
+[node name="TopDome" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+mesh = SubResource("CapsuleMesh_spout")
+
+[node name="PoisonSpout" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 2.5, 0.4)
+mesh = SubResource("CapsuleMesh_spout")
+material_override = SubResource("SpoutMaterial")
+
+[node name="SpoutParticles" type="GPUParticles3D" parent="Meshes/PoisonSpout"]
+amount = 15
+lifetime = 1.5
+process_material = SubResource("PoisonMist")
+draw_pass_1 = SubResource("CapsuleMesh_spout")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape")
+
+[node name="RangeIndicator" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+top_level = true
+mesh = SubResource("CylinderMesh_range")
+material_override = SubResource("RangeMaterial")
+visible = false
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0.7)
+
+[node name="SelectionRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.025, 0)
+mesh = SubResource("TorusMesh_selection")
+visible = false
+
+[node name="UpgradeParticles" type="GPUParticles3D" parent="."]
+amount = 50
+lifetime = 1.0
+one_shot = true
+explosiveness = 1.0
+emitting = false

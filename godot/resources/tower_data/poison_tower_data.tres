@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="TowerData" load_steps=2 format=3 uid="uid://towerdata_poison"]
+
+[ext_resource type="Script" path="res://resources/tower_data/tower_data.gd" id="1_8v3f4"]
+
+[resource]
+script = ExtResource("1_8v3f4")
+tower_name = "Poison Tower"
+description = "Damage over time. Stacks with multiple hits."
+tower_type = 6
+base_damage = 10.0
+base_range = 16.0
+base_fire_rate = 1.8
+projectile_speed = 20.0
+base_cost = 80
+upgrade_costs = Array[int]([180, 350, 600])
+damage_multiplier = 1.25
+range_multiplier = 1.1
+fire_rate_multiplier = 1.2
+base_color = Color(0.2, 0.5, 0.2, 1)
+upgrade_colors = Array[Color]([Color(0.3, 0.7, 0.3, 1), Color(0.4, 0.9, 0.4, 1), Color(0.6, 1, 0.5, 1)])
+projectile_type = 5
+projectile_color = Color(0.4, 0.9, 0.3, 1)
+special_effect = 1
+effect_duration = 5.0
+effect_strength = 0.3
+aura_range = 0.0
+damage_buff = 0.0
+range_buff = 0.0
+gold_per_second = 0.0
+can_target_air = false
+piercing = false
+splash_radius = 0.0
+armor_piercing = 0.0
+category = 0

@@ -1,0 +1,122 @@
+[gd_scene load_steps=13 format=3 uid="uid://tower_arrow"]
+
+[ext_resource type="Script" path="res://entities/towers/tower_arrow.gd" id="1_arrow"]
+
+[sub_resource type="BoxMesh" id="BoxMesh_base"]
+size = Vector3(1.2, 0.3, 1.2)
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pillar1"]
+height = 2.0
+radius = 0.15
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pillar2"]
+height = 2.0
+radius = 0.15
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pillar3"]
+height = 2.0
+radius = 0.15
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pillar4"]
+height = 2.0
+radius = 0.15
+
+[sub_resource type="BoxMesh" id="BoxMesh_platform"]
+size = Vector3(1.4, 0.2, 1.4)
+
+[sub_resource type="BoxMesh" id="BoxMesh_roof"]
+size = Vector3(1.6, 0.15, 1.6)
+
+[sub_resource type="CylinderMesh" id="CylinderShape"]
+height = 2.5
+radius = 0.75
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_range"]
+top_radius = 12.0
+bottom_radius = 12.0
+height = 0.05
+
+[sub_resource type="StandardMaterial3D" id="RangeMaterial"]
+albedo_color = Color(0.6, 0.4, 0.2, 0.3)
+transparency = 1
+
+[sub_resource type="TorusMesh" id="TorusMesh_selection"]
+inner_radius = 1.0
+outer_radius = 1.1
+
+[node name="ArrowTower" type="StaticBody3D"]
+collision_layer = 2
+collision_mask = 15
+script = ExtResource("1_arrow")
+
+[node name="Meshes" type="Node3D" parent="."]
+
+[node name="Base" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+mesh = SubResource("BoxMesh_base")
+
+[node name="Pillar1" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 1.15, -0.5)
+mesh = SubResource("CylinderMesh_pillar1")
+
+[node name="Pillar2" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.15, -0.5)
+mesh = SubResource("CylinderMesh_pillar2")
+
+[node name="Pillar3" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, -0.5, 1.15, 0.5)
+mesh = SubResource("CylinderMesh_pillar3")
+
+[node name="Pillar4" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0.5, 1.15, 0.5)
+mesh = SubResource("CylinderMesh_pillar4")
+
+[node name="Platform" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.2, 0)
+mesh = SubResource("BoxMesh_platform")
+
+[node name="Roof" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+mesh = SubResource("BoxMesh_roof")
+
+[node name="Bow" type="Node3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 0.5)
+
+[node name="BowString" type="MeshInstance3D" parent="Meshes/Bow"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("BoxMesh_roof")
+
+[node name="BowTip" type="MeshInstance3D" parent="Meshes/Bow"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.3, 0)
+mesh = SubResource("CylinderMesh_pillar1")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape")
+
+[node name="RangeIndicator" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+top_level = true
+mesh = SubResource("CylinderMesh_range")
+material_override = SubResource("RangeMaterial")
+visible = false
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.4, 1)
+
+[node name="SelectionRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.025, 0)
+mesh = SubResource("TorusMesh_selection")
+visible = false
+
+[node name="UpgradeParticles" type="GPUParticles3D" parent="."]
+amount = 50
+lifetime = 1.0
+one_shot = true
+explosiveness = 1.0
+emitting = false
+
+[node name="PointLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.5, 0)
+light_color = Color(0.8, 0.6, 0.3, 1)
+light_energy = 0.5
+omni_range = 5.0

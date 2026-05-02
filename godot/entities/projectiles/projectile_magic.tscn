@@ -1,0 +1,43 @@
+[gd_scene load_steps=6 format=3 uid="uid://proj_magic"]
+
+[ext_resource type="Script" path="res://entities/projectiles/projectile_base.gd" id="1_base"]
+
+[sub_resource type="SphereMesh" id="SphereMesh_magic"]
+height = 0.4
+radius = 0.2
+
+[sub_resource type="StandardMaterial3D" id="Material_magic"]
+albedo_color = Color(0.8, 0.3, 1, 1)
+emission = Color(0.8, 0.3, 1, 1)
+emission_energy = 2.0
+
+[sub_resource type="SphereShape3D" id="Shape_magic"]
+radius = 0.2
+
+[sub_resource type="ParticleProcessMaterial" id="Trail_magic"]
+emission_shape = 0
+direction = Vector3(0, -1, 0)
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 2.0
+initial_velocity_max = 4.0
+color = Color(0.9, 0.5, 1, 0.7)
+
+[node name="ProjectileMagic" type="Area3D"]
+collision_layer = 8
+collision_mask = 4
+script = ExtResource("1_base")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+mesh = SubResource("SphereMesh_magic")
+surface_material_override/0 = SubResource("Material_magic")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_magic")
+
+[node name="Trail" type="GPUParticles3D" parent="."]
+amount = 40
+lifetime = 0.3
+trail_enabled = true
+trail_lifetime = 0.2
+process_material = SubResource("Trail_magic")
+draw_pass_1 = SubResource("SphereMesh_magic")

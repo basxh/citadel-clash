@@ -1,0 +1,45 @@
+[gd_scene load_steps=6 format=3 uid="uid://proj_bolt"]
+
+[ext_resource type="Script" path="res://entities/projectiles/projectile_base.gd" id="1_base"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_bolt"]
+height = 1.2
+top_radius = 0.06
+bottom_radius = 0.08
+
+[sub_resource type="StandardMaterial3D" id="Material_bolt"]
+albedo_color = Color(0.7, 0.7, 0.8, 1)
+metallic = 0.8
+roughness = 0.3
+
+[sub_resource type="SphereShape3D" id="Shape_bolt"]
+radius = 0.12
+
+[sub_resource type="ParticleProcessMaterial" id="Trail_bolt"]
+emission_shape = 0
+direction = Vector3(0, -1, 0)
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 1.0
+initial_velocity_max = 2.0
+color = Color(0.8, 0.8, 0.9, 0.4)
+
+[node name="ProjectileBolt" type="Area3D"]
+collision_layer = 8
+collision_mask = 4
+script = ExtResource("1_base")
+
+[node name="Mesh" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0, 0)
+mesh = SubResource("CylinderMesh_bolt")
+surface_material_override/0 = SubResource("Material_bolt")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("Shape_bolt")
+
+[node name="Trail" type="GPUParticles3D" parent="."]
+amount = 15
+lifetime = 0.4
+trail_enabled = true
+trail_lifetime = 0.3
+process_material = SubResource("Trail_bolt")
+draw_pass_1 = SubResource("CylinderMesh_bolt")

@@ -1,0 +1,34 @@
+[gd_resource type="Resource" script_class="TowerData" load_steps=2 format=3 uid="uid://towerdata_economy"]
+
+[ext_resource type="Script" path="res://resources/tower_data/tower_data.gd" id="1_8v3f4"]
+
+[resource]
+script = ExtResource("1_8v3f4")
+tower_name = "Economy Tower"
+description = "Generates passive gold income. No combat ability."
+tower_type = 9
+base_damage = 0.0
+base_range = 0.0
+base_fire_rate = 0.0
+projectile_speed = 0.0
+base_cost = 300
+upgrade_costs = Array[int]([500, 900, 1600])
+damage_multiplier = 1.0
+range_multiplier = 1.0
+fire_rate_multiplier = 1.0
+base_color = Color(0.9, 0.7, 0.1, 1)
+upgrade_colors = Array[Color]([Color(1, 0.8, 0.3, 1), Color(1, 0.9, 0.5, 1), Color(1, 1, 0.7, 1)])
+projectile_type = 9
+projectile_color = Color(1, 0.8, 0.1, 1)
+special_effect = 8
+effect_duration = 0.0
+effect_strength = 0.0
+aura_range = 0.0
+damage_buff = 0.0
+range_buff = 0.0
+gold_per_second = 2.0
+can_target_air = false
+piercing = false
+splash_radius = 0.0
+armor_piercing = 0.0
+category = 3

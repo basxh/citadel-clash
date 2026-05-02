@@ -1,0 +1,94 @@
+[gd_scene load_steps=11 format=3 uid="uid://tower_economy"]
+
+[ext_resource type="Script" path="res://entities/towers/tower_economy.gd" id="1_economy"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+height = 0.4
+radius = 1.3
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tier1"]
+height = 0.8
+radius = 1.1
+top_radius = 0.9
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_tier2"]
+height = 0.6
+radius = 0.9
+top_radius = 0.7
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_coin"]
+height = 0.15
+radius = 0.5
+
+[sub_resource type="StandardMaterial3D" id="CoinMaterial"]
+albedo_color = Color(1, 0.8, 0.1, 1)
+metallic = 1.0
+roughness = 0.2
+
+[sub_resource type="CylinderMesh" id="CylinderShape"]
+height = 2.5
+radius = 1.3
+
+[sub_resource type="TorusMesh" id="TorusMesh_selection"]
+inner_radius = 1.4
+outer_radius = 1.5
+
+[sub_resource type="ParticleProcessMaterial" id="GoldSparkle"]
+emission_shape = 1
+emission_sphere_radius = 0.8
+direction = Vector3(0, 1, 0)
+gravity = Vector3(0, -2, 0)
+initial_velocity_min = 1.0
+initial_velocity_max = 2.0
+color = Color(1, 0.9, 0.4, 1)
+
+[node name="EconomyTower" type="StaticBody3D"]
+collision_layer = 2
+collision_mask = 15
+script = ExtResource("1_economy")
+
+[node name="Meshes" type="Node3D" parent="."]
+
+[node name="Base" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.2, 0)
+mesh = SubResource("CylinderMesh_base")
+
+[node name="Tier1" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.8, 0)
+mesh = SubResource("CylinderMesh_tier1")
+
+[node name="Tier2" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.5, 0)
+mesh = SubResource("CylinderMesh_tier2")
+
+[node name="Coin" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 1.9, 0)
+mesh = SubResource("CylinderMesh_coin")
+material_override = SubResource("CoinMaterial")
+
+[node name="CoinParticles" type="GPUParticles3D" parent="Meshes/Coin"]
+amount = 25
+lifetime = 1.0
+process_material = SubResource("GoldSparkle")
+draw_pass_1 = SubResource("CylinderMesh_coin")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape")
+
+[node name="SelectionRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.025, 0)
+mesh = SubResource("TorusMesh_selection")
+visible = false
+
+[node name="UpgradeParticles" type="GPUParticles3D" parent="."]
+amount = 50
+lifetime = 1.0
+one_shot = true
+explosiveness = 1.0
+emitting = false
+
+[node name="PointLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 2.0, 0)
+light_color = Color(1, 0.8, 0.2, 1)
+light_energy = 0.7
+omni_range = 6.0

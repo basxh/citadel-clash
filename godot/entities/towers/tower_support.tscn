@@ -1,0 +1,107 @@
+[gd_scene load_steps=11 format=3 uid="uid://tower_support"]
+
+[ext_resource type="Script" path="res://entities/towers/tower_support.gd" id="1_support"]
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_base"]
+height = 0.3
+radius = 1.2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_pillar"]
+height = 2.5
+radius = 0.5
+
+[sub_resource type="SphereMesh" id="SphereMesh_orb"]
+height = 1.2
+radius = 0.6
+
+[sub_resource type="StandardMaterial3D" id="OrbMaterial"]
+albedo_color = Color(1, 0.9, 0.3, 0.8)
+emission = Color(1, 0.9, 0.3, 1)
+emission_energy = 1.5
+
+[sub_resource type="CylinderMesh" id="CylinderShape"]
+height = 3.0
+radius = 1.2
+
+[sub_resource type="CylinderMesh" id="CylinderMesh_range"]
+top_radius = 15.0
+bottom_radius = 15.0
+height = 0.05
+
+[sub_resource type="StandardMaterial3D" id="RangeMaterial"]
+albedo_color = Color(1, 0.9, 0.3, 0.2)
+transparency = 1
+
+[sub_resource type="TorusMesh" id="TorusMesh_selection"]
+inner_radius = 1.3
+outer_radius = 1.4
+
+[sub_resource type="ParticleProcessMaterial" id="AuraParticles"]
+emission_shape = 1
+emission_sphere_radius = 0.5
+direction = Vector3(0, 1, 0)
+gravity = Vector3(0, 0, 0)
+initial_velocity_min = 0.5
+initial_velocity_max = 1.0
+color = Color(1, 0.9, 0.5, 0.6)
+
+[node name="SupportTower" type="StaticBody3D"]
+collision_layer = 2
+collision_mask = 15
+script = ExtResource("1_support")
+
+[node name="Meshes" type="Node3D" parent="."]
+
+[node name="Base" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.15, 0)
+mesh = SubResource("CylinderMesh_base")
+
+[node name="Pillar" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1.55, 0)
+mesh = SubResource("CylinderMesh_pillar")
+
+[node name="OrbHolder" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.2, 0)
+mesh = SubResource("CylinderMesh_base")
+
+[node name="AuraOrb" type="MeshInstance3D" parent="Meshes"]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+mesh = SubResource("SphereMesh_orb")
+material_override = SubResource("OrbMaterial")
+
+[node name="OrbParticles" type="GPUParticles3D" parent="Meshes/AuraOrb"]
+amount = 40
+lifetime = 1.5
+process_material = SubResource("AuraParticles")
+draw_pass_1 = SubResource("SphereMesh_orb")
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+shape = SubResource("CylinderShape")
+
+[node name="RangeIndicator" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0.025, 0)
+top_level = true
+mesh = SubResource("CylinderMesh_range")
+material_override = SubResource("RangeMaterial")
+visible = false
+
+[node name="Muzzle" type="Marker3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+
+[node name="SelectionRing" type="MeshInstance3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, -4.37114e-08, -1, 0, 1, -4.37114e-08, 0, 0.025, 0)
+mesh = SubResource("TorusMesh_selection")
+visible = false
+
+[node name="UpgradeParticles" type="GPUParticles3D" parent="."]
+amount = 50
+lifetime = 1.0
+one_shot = true
+explosiveness = 1.0
+emitting = false
+
+[node name="PointLight" type="OmniLight3D" parent="."]
+transform = Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 3.5, 0)
+light_color = Color(1, 0.9, 0.3, 1)
+light_energy = 0.8
+omni_range = 10.0
